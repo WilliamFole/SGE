@@ -1,0 +1,148 @@
+CMD=venv\Scripts\pyinstaller.exe --noconfirm --clean SGE.spec
+RETURN=1
+STDOUT:
+
+STDERR:
+383 INFO: PyInstaller: 6.21.0, contrib hooks: 2026.6
+384 INFO: Python: 3.14.6
+432 INFO: Platform: Windows-10-10.0.19045-SP0
+433 INFO: Python environment: C:\Users\User\Downloads\estoque_app\venv
+436 INFO: Removing temporary files and cleaning cache in C:\Users\User\AppData\Local\pyinstaller
+447 INFO: Module search paths (PYTHONPATH):
+['c:\\Users\\User\\Downloads\\estoque_app\\venv\\Scripts\\pyinstaller.exe',
+ 'C:\\Users\\User\\AppData\\Local\\Python\\pythoncore-3.14-64\\python314.zip',
+ 'C:\\Users\\User\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs',
+ 'C:\\Users\\User\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib',
+ 'C:\\Users\\User\\AppData\\Local\\Python\\pythoncore-3.14-64',
+ 'C:\\Users\\User\\Downloads\\estoque_app\\venv',
+ 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages',
+ 'c:\\Users\\User\\Downloads\\estoque_app']
+1155 INFO: Appending 'datas' from .spec
+1158 INFO: checking Analysis
+1158 INFO: Building Analysis because Analysis-00.toc is non existent
+1158 INFO: Looking for Python shared library...
+1158 INFO: Using Python shared library: C:\Users\User\AppData\Local\Python\pythoncore-3.14-64\python314.dll
+1158 INFO: Running Analysis Analysis-00.toc
+1158 INFO: Target bytecode optimization level: 0
+1159 INFO: Initializing module dependency graph...
+1160 INFO: Initializing module graph hook caches...
+1187 INFO: Analyzing modules for base_library.zip ...
+4910 INFO: Processing standard module hook 'hook-encodings.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+5846 INFO: Processing standard module hook 'hook-pickle.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+6859 INFO: Processing standard module hook 'hook-math.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+7206 INFO: Processing standard module hook 'hook-difflib.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+7234 INFO: Processing standard module hook 'hook-heapq.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+12874 INFO: Caching module dependency graph...
+12935 INFO: Analyzing c:\Users\User\Downloads\estoque_app\app.py
+13087 INFO: Processing standard module hook 'hook-sqlite3.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+13802 INFO: Processing standard module hook 'hook-webbrowser.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+13941 INFO: Processing standard module hook 'hook-sysconfig.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+13956 INFO: Processing standard module hook 'hook-_ctypes.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+14116 INFO: Processing standard module hook 'hook-platform.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+14876 INFO: Processing pre-safe-import-module hook 'hook-typing_extensions.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+14880 INFO: SetuptoolsInfo: initializing cached setuptools info...
+17171 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+17382 INFO: Processing standard module hook 'hook-xml.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+19652 INFO: Processing standard module hook 'hook-jinja2.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+23032 INFO: Processing pre-safe-import-module hook 'hook-importlib_metadata.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+23033 INFO: Setuptools: 'importlib_metadata' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.importlib_metadata'!
+23050 INFO: Processing standard module hook 'hook-setuptools.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+23082 INFO: Processing pre-safe-import-module hook 'hook-distutils.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+23152 INFO: Processing pre-safe-import-module hook 'hook-jaraco.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+23153 INFO: Setuptools: 'jaraco' appears to be a full setuptools-vendored copy - creating alias to 'setuptools._vendor.jaraco'!
+23182 INFO: Processing pre-safe-import-module hook 'hook-more_itertools.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+23183 INFO: Setuptools: 'more_itertools' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.more_itertools'!
+23767 INFO: Processing pre-safe-import-module hook 'hook-packaging.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+24332 INFO: Processing standard module hook 'hook-setuptools._vendor.jaraco.text.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+24335 INFO: Processing pre-safe-import-module hook 'hook-importlib_resources.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+24355 INFO: Processing pre-safe-import-module hook 'hook-backports.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+24356 INFO: Setuptools: 'backports' appears to be a full setuptools-vendored copy - creating alias to 'setuptools._vendor.backports'!
+25400 INFO: Processing pre-safe-import-module hook 'hook-tomli.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+25401 INFO: Setuptools: 'tomli' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.tomli'!
+26727 INFO: Processing pre-safe-import-module hook 'hook-wheel.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+26728 INFO: Setuptools: 'wheel' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.wheel'!
+26879 INFO: Processing standard module hook 'hook-setuptools._vendor.importlib_metadata.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+26935 INFO: Processing pre-safe-import-module hook 'hook-zipp.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+26936 INFO: Setuptools: 'zipp' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.zipp'!
+27089 INFO: Processing standard module hook 'hook-openpyxl.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+27759 INFO: Processing standard module hook 'hook-xml.etree.cElementTree.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+28595 INFO: Processing standard module hook 'hook-PIL.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+28946 INFO: Processing standard module hook 'hook-PIL.Image.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+30210 INFO: Processing standard module hook 'hook-PIL.ImageFilter.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+32174 INFO: Processing standard module hook 'hook-reportlab.lib.utils.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+32409 INFO: Processing standard module hook 'hook-reportlab.pdfbase._fontdata.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+33770 INFO: Processing standard module hook 'hook-charset_normalizer.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+39004 INFO: Processing standard module hook 'hook-xml.dom.domreg.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+39180 INFO: Analyzing hidden import 'reportlab.graphics.barcode'
+39462 INFO: Processing module hooks (post-graph stage)...
+40200 INFO: Processing standard module hook 'hook-PIL.SpiderImagePlugin.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+41728 INFO: Performing binary vs. data reclassification (30 entries)
+41736 INFO: Looking for ctypes DLLs
+41861 INFO: Analyzing run-time hooks ...
+41866 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+41871 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+41877 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+41882 INFO: Including run-time hook 'pyi_rth_setuptools.py' from 'C:\\Users\\User\\Downloads\\estoque_app\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+41908 INFO: Creating base_library.zip...
+41944 INFO: Looking for dynamic libraries
+44066 INFO: Extra DLL search directories (AddDllDirectory): []
+44066 INFO: Extra DLL search directories (PATH): []
+44515 INFO: Warnings written to c:\Users\User\Downloads\estoque_app\build\SGE\warn-SGE.txt
+44667 INFO: Graph cross-reference written to c:\Users\User\Downloads\estoque_app\build\SGE\xref-SGE.html
+44752 INFO: checking PYZ
+44753 INFO: Building PYZ because PYZ-00.toc is non existent
+44753 INFO: Building PYZ (ZlibArchive) c:\Users\User\Downloads\estoque_app\build\SGE\PYZ-00.pyz
+46078 INFO: Building PYZ (ZlibArchive) c:\Users\User\Downloads\estoque_app\build\SGE\PYZ-00.pyz completed successfully.
+46125 INFO: checking PKG
+46126 INFO: Building PKG because PKG-00.toc is non existent
+46126 INFO: Building PKG (CArchive) SGE.pkg
+49028 INFO: Building PKG (CArchive) SGE.pkg completed successfully.
+49033 INFO: Bootloader C:\Users\User\Downloads\estoque_app\venv\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\runw.exe
+49034 INFO: checking EXE
+49034 INFO: Building EXE because EXE-00.toc is non existent
+49034 INFO: Building EXE from EXE-00.toc
+49035 INFO: Copying bootloader EXE to c:\Users\User\Downloads\estoque_app\dist\SGE.exe
+49202 INFO: Copying icon to EXE
+Traceback (most recent call last):
+  File "<frozen runpy>", line 203, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\User\Downloads\estoque_app\venv\Scripts\pyinstaller.exe\__main__.py", line 5, in <module>
+    sys.exit(_console_script_run())
+             ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\User\Downloads\estoque_app\venv\Lib\site-packages\PyInstaller\__main__.py", line 231, in _console_script_run
+    run()
+    ~~~^^
+  File "C:\Users\User\Downloads\estoque_app\venv\Lib\site-packages\PyInstaller\__main__.py", line 215, in run
+    run_build(pyi_config, spec_file, **vars(args))
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\Downloads\estoque_app\venv\Lib\site-packages\PyInstaller\__main__.py", line 70, in run_build
+    PyInstaller.building.build_main.main(pyi_config, spec_file, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\Downloads\estoque_app\venv\Lib\site-packages\PyInstaller\building\build_main.py", line 1275, in main
+    build(specfile, distpath, workpath, clean_build)
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\Downloads\estoque_app\venv\Lib\site-packages\PyInstaller\building\build_main.py", line 1213, in build
+    exec(code, spec_namespace)
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "SGE.spec", line 35, in <module>
+    exe = EXE(
+        pyz,
+    ...<17 lines>...
+        icon=['static\\img\\app.ico'],
+    )
+  File "C:\Users\User\Downloads\estoque_app\venv\Lib\site-packages\PyInstaller\building\api.py", line 675, in __init__
+    self.__postinit__()
+    ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\User\Downloads\estoque_app\venv\Lib\site-packages\PyInstaller\building\datastruct.py", line 184, in __postinit__
+    self.assemble()
+    ~~~~~~~~~~~~~^^
+  File "C:\Users\User\Downloads\estoque_app\venv\Lib\site-packages\PyInstaller\building\api.py", line 788, in assemble
+    self._retry_operation(icon.CopyIcons, build_name, self.icon)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\Downloads\estoque_app\venv\Lib\site-packages\PyInstaller\building\api.py", line 1058, in _retry_operation
+    return func(*args)
+  File "C:\Users\User\Downloads\estoque_app\venv\Lib\site-packages\PyInstaller\utils\win32\icon.py", line 206, in CopyIcons
+    srcpath = normalize_icon_type(srcpath, ("exe", "ico"), "ico", config.CONF["workpath"])
+  File "C:\Users\User\Downloads\estoque_app\venv\Lib\site-packages\PyInstaller\building\icon.py", line 34, in normalize_icon_type
+    raise FileNotFoundError(f"Icon input file {icon_path} not found")
+FileNotFoundError: Icon input file c:\Users\User\Downloads\estoque_app\static\img\app.ico not found

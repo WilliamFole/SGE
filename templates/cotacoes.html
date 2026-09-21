@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block page_title %}Cotações{% endblock %}
+{% block title %}Cotações · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Cotações</h1>
+    <p class="page-sub">Orçamentos para clientes</p>
+  </div>
+  <a href="{{ url_for('cotacao_nova') }}" class="btn btn-primary">+ Nova Cotação</a>
+</div>
+
+<form method="GET" class="filter-bar">
+  <label>Status
+    <select name="status" onchange="this.form.submit()">
+      <option value="">Todos</option>
+      <option value="Aberta" {{ 'selected' if status_filtro=='Aberta' }}>Aberta</option>
+      <option value="Aprovada" {{ 'selected' if status_filtro=='Aprovada' }}>Aprovada</option>
+      <option value="Rejeitada" {{ 'selected' if status_filtro=='Rejeitada' }}>Rejeitada</option>
+      <option value="Convertida" {{ 'selected' if status_filtro=='Convertida' }}>Convertida</option>
+      <option value="Expirada" {{ 'selected' if status_filtro=='Expirada' }}>Expirada</option>
+    </select>
+  </label>
+  <button type="submit" class="btn btn-secondary">Filtrar</button>
+  <a href="{{ url_for('cotacoes_list') }}" class="btn btn-ghost">Limpar</a>
+</form>
+
+<div class="panel">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Nº</th>
+        <th>Cliente</th>
+        <th>Data Emissão</th>
+        <th>Validade</th>
+        <th class="num-right">Valor Total</th>
+        <th>Status</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in cotacoes %}
+      <tr>
+        <td class="mono">{{ c.numero }}</td>
+        <td>{{ c.nome_cliente }}</td>
+        <td>{{ c.data_emissao[:10] }}</td>
+        <td>{{ c.data_validade[:10] }}</td>
+        <td class="num-right">{{ "%.2f"|format(c.valor_total|float) }}</td>
+        <td>
+          {% if c.status == 'Aberta' %}<span class="tag tag-warn">Aberta</span>
+          {% elif c.status == 'Aprovada' %}<span class="tag tag-good">Aprovada</span>
+          {% elif c.status == 'Rejeitada' %}<span class="tag tag-danger">Rejeitada</span>
+          {% elif c.status == 'Convertida' %}<span class="tag tag-neutral">Convertida</span>
+          {% else %}<span class="tag tag-neutral">{{ c.status }}</span>{% endif %}
+        </td>
+        <td class="actions-cell">
+          <a href="{{ url_for('cotacao_detalhe', id_cotacao=c.id_cotacao) }}" class="link-action">Ver</a>
+          {% if c.status == 'Aberta' %}
+          <a href="{{ url_for('cotacao_detalhe', id_cotacao=c.id_cotacao) }}" class="link-action">Editar</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="empty-hint">Nenhuma cotação encontrada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

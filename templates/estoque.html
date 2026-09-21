@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block page_title %}Estoque Atual{% endblock %}
+{% block title %}Estoque Atual · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Estoque Atual</h1>
+    <p class="page-sub">Saldo actual de todos os produtos — exportável em PDF e Excel</p>
+  </div>
+</div>
+
+<form method="GET" class="filter-bar">
+  <label>Categoria
+    <select name="categoria_id">
+      <option value="">Todas</option>
+      {% for c in categorias %}
+      <option value="{{ c.id_categoria }}" {{ 'selected' if categoria_id==c.id_categoria }}>{{ c.nome }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Situação
+    <select name="situacao">
+      <option value="">Todas</option>
+      <option value="normal" {{ 'selected' if situacao_filtro=='normal' }}>Normal</option>
+      <option value="abaixo_minimo" {{ 'selected' if situacao_filtro=='abaixo_minimo' }}>Abaixo do mínimo</option>
+      <option value="acima_maximo" {{ 'selected' if situacao_filtro=='acima_maximo' }}>Acima do máximo</option>
+    </select>
+  </label>
+  <button type="submit" class="btn btn-secondary">Filtrar</button>
+  <a href="{{ url_for('estoque_list') }}" class="btn btn-ghost">Limpar</a>
+</form>
+
+<div class="report-toolbar no-print">
+  <span class="muted">{{ produtos|length }} produto(s) encontrado(s) — Valor total (custo):
+    <strong>{{ "%.2f"|format(valor_custo_total|float) }} {{ config.moeda }}</strong> ·
+    Valor total (venda): <strong>{{ "%.2f"|format(valor_venda_total|float) }} {{ config.moeda }}</strong>
+  </span>
+  <div class="header-actions">
+    <a href="{{ url_for('estoque_list', categoria_id=categoria_id, situacao=situacao_filtro, exportar='pdf') }}"
+       class="btn btn-secondary">⬇ Exportar PDF</a>
+    <a href="{{ url_for('estoque_list', categoria_id=categoria_id, situacao=situacao_filtro, exportar='excel') }}"
+       class="btn btn-secondary">⬇ Exportar Excel</a>
+  </div>
+</div>
+
+<div class="panel">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Produto</th>
+        <th>Categoria</th>
+        <th class="num-right">Saldo actual</th>
+        <th class="num-right">Valor custo</th>
+        <th class="num-right">Valor venda</th>
+        <th class="num-right">Mínimo</th>
+        <th class="num-right">Máximo</th>
+        <th>Situação</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for p in produtos %}
+      <tr>
+        <td class="mono">{{ p.codigo }}</td>
+        <td>{{ p.nome }}</td>
+        <td class="muted">{{ p.categoria_nome or '—' }}</td>
+        <td class="num-right"><strong>{{ p.saldo_atual }}</strong></td> {# inteiro #}
+        <td class="num-right">{{ "%.2f"|format(p.saldo_atual * (p.preco_custo or 0)) }}</td>
+        <td class="num-right">{{ "%.2f"|format(p.saldo_atual * (p.preco_venda or 0)) }}</td>
+        <td class="num-right muted">{{ p.estoque_minimo or 0 }}</td>
+        <td class="num-right muted">{{ p.estoque_maximo or '—' }}</td>
+        <td>
+          {% if p.situacao == 'abaixo_minimo' %}<span class="tag tag-danger">Abaixo do mínimo</span>
+          {% elif p.situacao == 'acima_maximo' %}<span class="tag tag-warn">Acima do máximo</span>
+          {% else %}<span class="tag tag-good">Normal</span>{% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="9" class="empty-hint">Nenhum produto encontrado para os filtros aplicados.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block page_title %}Categorias{% endblock %}
+{% block title %}Categorias · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Categorias</h1>
+    <p class="page-sub">Organize os produtos por categoria (RF01)</p>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="panel">
+    <h3>Nova Categoria</h3>
+    <form method="POST" action="{{ url_for('categorias_salvar') }}" class="stack-form">
+      <input type="hidden" name="id_categoria" id="id_categoria">
+      <label>Nome
+        <input type="text" name="nome" id="nome" required maxlength="50">
+      </label>
+      <label>Descrição (opcional)
+        <textarea name="descricao" id="descricao" rows="3"></textarea>
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <button type="button" class="btn btn-ghost" onclick="limparFormCategoria()">Limpar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="panel">
+    <h3>Categorias Cadastradas</h3>
+    <table class="data-table">
+      <thead><tr><th>Nome</th><th>Descrição</th><th>Situação</th><th></th></tr></thead>
+      <tbody>
+      {% for c in categorias %}
+        <tr>
+          <td>{{ c.nome }}</td>
+          <td class="muted">{{ c.descricao or '—' }}</td>
+          <td>{% if c.ativo %}<span class="tag tag-good">Ativa</span>{% else %}<span class="tag tag-danger">Inativa</span>{% endif %}</td>
+          <td class="actions-cell">
+            <button class="link-action" onclick="editarCategoria('{{ c.id_categoria }}','{{ c.nome|e }}','{{ (c.descricao or '')|e }}')">Editar</button>
+            <form method="POST" action="{{ url_for('categorias_excluir', id_categoria=c.id_categoria) }}" class="inline-form"
+                  onsubmit="return confirm('Excluir/Desativar esta categoria?');">
+              <button type="submit" class="link-action link-danger">Excluir</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="empty-hint">Nenhuma categoria cadastrada.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function editarCategoria(id, nome, descricao) {
+  document.getElementById('id_categoria').value = id;
+  document.getElementById('nome').value = nome;
+  document.getElementById('descricao').value = descricao;
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function limparFormCategoria() {
+  document.getElementById('id_categoria').value = '';
+  document.getElementById('nome').value = '';
+  document.getElementById('descricao').value = '';
+}
+</script>
+{% endblock %}
