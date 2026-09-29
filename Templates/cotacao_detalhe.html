@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block page_title %}Cotação {{ cotacao.numero }}{% endblock %}
+{% block title %}Cotação {{ cotacao.numero }} · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Cotacção {{ cotacao.numero }}</h1>
+    <p class="page-sub">Emissão: {{ cotacao.data_emissao[:10] }} · Validade: {{ cotacao.data_validade[:10] }}</p>
+  </div>
+  <div class="header-actions no-print">
+    <a href="{{ url_for('cotacao_exportar', id_cotacao=cotacao.id_cotacao, formato='pdf') }}" class="btn btn-secondary">⬇ PDF</a>
+    <a href="{{ url_for('cotacao_exportar', id_cotacao=cotacao.id_cotacao, formato='excel') }}" class="btn btn-secondary">⬇ Excel</a>
+    {% if cotacao.status == 'Aberta' %}
+    <form method="POST" action="{{ url_for('cotacao_aprovar', id_cotacao=cotacao.id_cotacao) }}" style="display:inline;">
+      <button type="submit" class="btn btn-primary" onclick="return confirm('Aprovar esta cotação?')">Aprovar</button>
+    </form>
+    <form method="POST" action="{{ url_for('cotacao_rejeitar', id_cotacao=cotacao.id_cotacao) }}" style="display:inline;">
+      <button type="submit" class="btn btn-danger" onclick="return confirm('Rejeitar esta cotação?')">Rejeitar</button>
+    </form>
+    {% endif %}
+    {% if cotacao.status == 'Aprovada' %}
+    <form method="POST" action="{{ url_for('cotacao_converter', id_cotacao=cotacao.id_cotacao) }}" style="display:inline;">
+      <button type="submit" class="btn btn-success" onclick="return confirm('Converter esta cotação em venda?')">Converter em Venda</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="panel">
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:20px;">
+    <div><strong>Cliente:</strong> {{ cotacao.nome_cliente }}</div>
+    <div><strong>Email:</strong> {{ cotacao.email_cliente or '—' }}</div>
+    <div><strong>Telefone:</strong> {{ cotacao.telefone_cliente or '—' }}</div>
+    <div><strong>Status:</strong>
+      {% if cotacao.status == 'Aberta' %}<span class="tag tag-warn">Aberta</span>
+      {% elif cotacao.status == 'Aprovada' %}<span class="tag tag-good">Aprovada</span>
+      {% elif cotacao.status == 'Rejeitada' %}<span class="tag tag-danger">Rejeitada</span>
+      {% elif cotacao.status == 'Convertida' %}<span class="tag tag-neutral">Convertida</span>
+      {% else %}<span class="tag tag-neutral">{{ cotacao.status }}</span>{% endif %}
+    </div>
+    <div><strong>Observações:</strong> {{ cotacao.observacoes or '—' }}</div>
+  </div>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Produto</th>
+        <th class="num-right">Quantidade</th>
+        <th class="num-right">Preço Unit.</th>
+        <th class="num-right">Desconto</th>
+        <th class="num-right">Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in itens %}
+      <tr>
+        <td>{{ item.codigo }}</td>
+        <td>{{ item.produto_nome }}</td>
+        <td class="num-right">{{ item.quantidade }}</td>
+        <td class="num-right">{{ "%.2f"|format(item.preco_unitario|float) }}</td>
+        <td class="num-right">{{ item.desconto_percentual }}%</td>
+        <td class="num-right">{{ "%.2f"|format(item.valor_total|float) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tr class="totais-row">
+      <td colspan="5" style="text-align:right;"><strong>Total Geral</strong></td>
+      <td class="num-right"><strong>{{ "%.2f"|format(cotacao.valor_total|float) }}</strong></td>
+    </tr>
+  </table>
+</div>
+{% endblock %}

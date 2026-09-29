@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block page_title %}Inventário Físico{% endblock %}
+{% block title %}Inventário Físico · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Inventário Físico</h1>
+    <p class="page-sub">
+      Compare o saldo do sistema com a contagem física de cada produto.
+      Após a 1ª exportação, alterações na contagem são marcadas a vermelho.
+    </p>
+  </div>
+</div>
+
+<div class="panel">
+  <form method="POST" class="stack-form" id="formInventario">
+    <table class="data-table" id="tabInventario">
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th class="num-right" style="width:160px">Saldo sistémico</th>
+          <th style="width:200px">Contagem física</th>
+          <th class="num-right" style="width:160px">Diferença</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in produtos %}
+        {% set exportado = (p.id_produto in ids_exportados) %}
+        {% set tem_delta = (p.valor_anterior is not none and p.valor_anterior != p.saldo_atual) %}
+        <tr class="{{ 'inventario-alterado' if exportado and tem_delta }}">
+          <td>
+            {{ p.nome }} <span class="muted">({{ p.codigo }})</span>
+            {% if exportado %}<span class="tag tag-amber" style="margin-left:6px">Exportado</span>{% endif %}
+          </td>
+          <td class="num-right" data-saldo="{{ p.saldo_atual }}">
+            <span class="inventory-masked" data-saldo-real="{{ p.saldo_atual }}">******</span>
+          </td>
+          <td class="contagem-cell">
+            <input type="number" step="1" min="0"
+                   name="contagem_{{ p.id_produto }}"
+                   class="contagem-input"
+                   data-id="{{ p.id_produto }}"
+                   data-saldo="{{ p.saldo_atual }}"
+                   value="{{ p.saldo_atual }}">
+            {% if p.valor_anterior is not none and p.valor_anterior != p.saldo_atual %}
+            {% set delta = p.saldo_atual - p.valor_anterior %}
+            <span class="delta-label {{ 'positive' if delta > 0 }}">
+              antes: {{ p.valor_anterior }} → Δ {{ '%+d'|format(delta) }}
+            </span>
+            {% endif %}
+          </td>
+          <td class="diferenca-cell num-right" data-id="{{ p.id_produto }}">
+            <span class="inventory-masked">******</span>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="empty-hint">Nenhum produto cadastrado com estoque.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="form-actions">
+      <label class="checkbox-label" style="margin-right:12px">
+        <input type="checkbox" name="exportar_pdf" value="1">
+        <strong>Guardar e exportar automaticamente em PDF</strong>
+      </label>
+      <button type="submit" class="btn btn-primary">Guardar contagem</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+// --- Inventário: mostrar valores e calcular diferença após o utilizador digitar ---
+(function(){
+  var inputs = document.querySelectorAll('.contagem-input');
+  inputs.forEach(function(inp){
+    function calcularEMostrar() {
+      var id = inp.dataset.id;
+      var saldoReal = parseInt(inp.dataset.saldo) || 0;
+      var contagem = parseInt(inp.value) || 0;
+      var diff = contagem - saldoReal;
+
+      // Desmascarar saldo sistémico nesta linha
+      var saldoCell = inp.closest('tr').querySelectorAll('td[data-saldo] span')[0] ||
+                      inp.closest('tr').querySelectorAll('.inventory-masked')[0];
+      if (saldoCell && saldoCell.classList.contains('inventory-masked')) {
+        saldoCell.classList.remove('inventory-masked');
+        saldoCell.classList.add('inventory-unmasked');
+        saldoCell.textContent = saldoReal;
+      }
+
+      // Mostrar diferença
+      var diffCell = document.querySelector('.diferenca-cell[data-id="' + id + '"] span');
+      if (diffCell && diffCell.classList.contains('inventory-masked')) {
+        diffCell.classList.remove('inventory-masked');
+        diffCell.classList.add('inventory-unmasked');
+      }
+      var diffCellRaw = document.querySelector('.diferenca-cell[data-id="' + id + '"]');
+      if (diffCellRaw) {
+        var cls = (diff === 0) ? 'text-success' : (diff < 0 ? 'text-danger' : 'text-warn');
+        var span = diffCellRaw.querySelector('span') || diffCellRaw;
+        span.textContent = (diff > 0 ? '+' : '') + diff;
+        diffCellRaw.className = 'diferenca-cell num-right ' + cls;
+        diffCellRaw.dataset.id = id;
+      }
+    }
+    inp.addEventListener('change', calcularEMostrar);
+    inp.addEventListener('blur', calcularEMostrar);
+    inp.addEventListener('keyup', function(ev){
+      if (ev.key === 'Enter') inp.blur();
+    });
+  });
+})();
+</script>
+{% endblock %}

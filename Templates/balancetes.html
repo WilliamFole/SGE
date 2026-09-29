@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% block page_title %}Balancetes & Extratos{% endblock %}
+{% block title %}Balancetes & Extratos · {{ app_name }}{% endblock %}
+{% block content %}
+
+{# Cabeçalho para impressão (company header) #}
+<div class="print-only">
+  <div class="report-header-block">
+    <div class="empresa-linha">{{ empresa.nome or app_name }}</div>
+    {% if empresa.morada or empresa.nuit or empresa.contacto or empresa.email %}
+    <div class="empresa-sub">
+      {{ empresa.morada }}{% if empresa.morada and (empresa.nuit or empresa.contacto or empresa.email) %} · {% endif %}
+      {% if empresa.nuit %}NUIT: {{ empresa.nuit }}{% endif %}
+      {% if empresa.contacto %} · Tel.: {{ empresa.contacto }}{% endif %}
+      {% if empresa.email %} · {{ empresa.email }}{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1>Balancetes & Extratos</h1>
+    <p class="page-sub">
+      Balancete mensal, trimestral e anual.
+    </p>
+  </div>
+</div>
+
+{# Seletor de tipo de relatório #}
+<form method="GET" class="filter-bar">
+  <label>Tipo de relatório
+    <div class="radio-group">
+      <label class="radio-option {{ 'active' if tipo=='mensal' }}">
+        <input type="radio" name="tipo" value="mensal" {{ 'checked' if tipo=='mensal' }} onchange="this.form.submit()">Mensal
+      </label>
+      <label class="radio-option {{ 'active' if tipo=='trimestral' }}">
+        <input type="radio" name="tipo" value="trimestral" {{ 'checked' if tipo=='trimestral' }} onchange="this.form.submit()">Trimestral
+      </label>
+      <label class="radio-option {{ 'active' if tipo=='anual' }}">
+        <input type="radio" name="tipo" value="anual" {{ 'checked' if tipo=='anual' }} onchange="this.form.submit()">Anual
+      </label>
+      <label class="radio-option {{ 'active' if tipo=='extrato_cat' }}">
+        <input type="radio" name="tipo" value="extrato_cat" {{ 'checked' if tipo=='extrato_cat' }} onchange="this.form.submit()">Extrato categoria
+      </label>
+    </div>
+  </label>
+</form>
+
+{# Filtros de data, categoria e produto #}
+<form method="GET" class="filter-bar">
+  <input type="hidden" name="tipo" value="{{ tipo }}">
+  <label>Data início
+    <input type="date" name="data_ini" value="{{ data_ini or '' }}" required>
+  </label>
+  <label>Data fim
+    <input type="date" name="data_fim" value="{{ data_fim or '' }}" required>
+  </label>
+  {% if tipo == 'extrato_cat' %}
+  <label>Categoria *
+    <select name="categoria_id" required>
+      <option value="">Seleccione...</option>
+      {% for c in categorias %}
+      <option value="{{ c.id_categoria }}" {{ 'selected' if categoria_id==c.id_categoria }}>{{ c.nome }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  {% else %}
+  <label>Categoria
+    <select name="categoria_id">
+      <option value="">Todas</option>
+      {% for c in categorias %}
+      <option value="{{ c.id_categoria }}" {{ 'selected' if categoria_id==c.id_categoria }}>{{ c.nome }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Produto (opcional)
+    <select name="id_produto">
+      <option value="">Todos</option>
+      {% for p in todos_produtos %}
+      <option value="{{ p.id_produto }}" {{ 'selected' if id_produto==p.id_produto }}>{{ p.codigo }} · {{ p.nome }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  {% endif %}
+  <button type="submit" class="btn btn-secondary">Actualizar</button>
+  <a href="{{ url_for('balancetes') }}" class="btn btn-ghost">Limpar</a>
+</form>
+
+{# Conteúdo principal #}
+{% if linhas %}
+<div class="report-toolbar no-print">
+  <span class="muted">
+    Período: <strong>{{ data_ini }}</strong> até <strong>{{ data_fim }}</strong>
+    · {{ linhas|length }} linha(s)
+  </span>
+  <div class="header-actions">
+    <button type="button" class="btn btn-secondary" onclick="window.print()">🖨 Imprimir</button>
+    <a href="{{ url_for('balancetes', tipo=tipo, data_ini=data_ini, data_fim=data_fim, categoria_id=categoria_id, id_produto=id_produto, exportar='pdf') }}"
+       class="btn btn-secondary">⬇ Exportar PDF</a>
+    <a href="{{ url_for('balancetes', tipo=tipo, data_ini=data_ini, data_fim=data_fim, categoria_id=categoria_id, id_produto=id_produto, exportar='excel') }}"
+       class="btn btn-secondary">⬇ Exportar Excel</a>
+  </div>
+</div>
+
+{# Extrato de Categoria (modo movimento cronológico com saldo acumulado) #}
+{% if tipo == 'extrato_cat' %}
+<div class="panel">
+  <h3>Extrato — {{ categoria_nome }}
+    <span class="muted" style="font-size:12px;font-weight:normal">de {{ data_ini }} até {{ data_fim }}</span>
+  </h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Data/Hora</th>
+        <th>Tipo</th>
+        <th>Código</th>
+        <th>Produto</th>
+        <th class="num-right">Qtd.</th>
+        <th>Unid.</th>
+        <th class="num-right">Preço unit.</th>
+        <th class="num-right">Valor (MZN)</th>
+        <th class="num-right">Saldo acumulado</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for l in linhas %}
+      <tr>
+        <td class="mono">{{ l.data_hora }}</td>
+        <td>
+          {% if l.tipo == 'Entrada' %}<span class="tag tag-good">Entrada (Débito)</span>
+          {% else %}<span class="tag tag-warn">Saída (Crédito)</span>{% endif %}
+        </td>
+        <td>{{ l.codigo }}</td>
+        <td>{{ l.produto }} <span class="muted">({{ l.codigo }})</span></td>
+        <td class="num-right">{{ l.quantidade }}</td>  {# inteiro #}
+        <td>{{ l.unidade }}</td>
+        <td class="num-right">{{ "%.2f"|format(l.preco_unitario or 0) }}</td>
+        <td class="num-right"><strong>{{ "%.2f"|format(l.valor_total or 0) }}</strong></td>
+        <td class="num-right">{{ l.saldo_acumulado }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tr class="totais-row">
+      <td colspan="3"><strong>TOTAIS do período</strong></td>
+      <td class="num-right"><strong>{{ totais.subtotais.qtd_entradas + totais.subtotais.qtd_saidas }}</strong></td>
+      <td></td>
+      <td class="num-right"><strong>{{ "%.2f"|format(totais.subtotais.valor_entradas + totais.subtotais.valor_saidas) }}</strong></td>
+      <td class="num-right"><strong>{{ totais.saldo_acumulado_final }}</strong></td>
+    </tr>
+  </table>
+  {% if totais.subtotais %}
+  <div style="margin-top:14px">
+    <div class="mini-table-wrapper">
+      <table class="mini-table" style="max-width:500px">
+        <thead>
+          <tr><th></th><th>Entradas (Débito)</th><th>Saídas (Crédito)</th><th>Saldo</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Quantidade</strong></td>
+            <td class="num-right">{{ totais.subtotais.qtd_entradas }}</td>
+            <td class="num-right">{{ totais.subtotais.qtd_saidas }}</td>
+            <td class="num-right text-success"><strong>{{ totais.subtotais.qtd_saldo }}</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Valor (MZN)</strong></td>
+            <td class="num-right">{{ "%.2f"|format(totais.subtotais.valor_entradas) }}</td>
+            <td class="num-right">{{ "%.2f"|format(totais.subtotais.valor_saidas) }}</td>
+            <td class="num-right text-success"><strong>{{ "%.2f"|format(totais.subtotais.valor_saldo) }}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{# Balancete (mensal/trimestral/anual) — por produto #}
+{% else %}
+<div class="panel">
+  <h3>{{ titulo }}
+    <span class="muted" style="font-size:12px;font-weight:normal">de {{ data_ini }} até {{ data_fim }}</span>
+  </h3>
+  <div style="overflow-x:auto">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th rowspan="2">Produto</th>
+        <th colspan="1" class="num-right" style="text-align:center;border-bottom:1px solid var(--borda)">Saldo Inicial</th>
+        <th colspan="2" class="num-right" style="text-align:center;border-bottom:1px solid var(--borda)">Entradas (Débito)</th>
+        <th colspan="2" class="num-right" style="text-align:center;border-bottom:1px solid var(--borda)">Saídas (Crédito)</th>
+        <th colspan="1" class="num-right" style="text-align:center;border-bottom:1px solid var(--borda)">Saldo Final</th>
+        <th colspan="1" class="num-right" style="text-align:center;border-bottom:1px solid var(--borda)">Lucro</th>
+      </tr>
+      <tr>
+        <th class="num-right">Qtd.</th>
+        <th class="num-right">Qtd.</th>
+        <th class="num-right">Valor (MZN)</th>
+        <th class="num-right">Qtd.</th>
+        <th class="num-right">Valor (MZN)</th>
+        <th class="num-right">Qtd.</th>
+        <th class="num-right">(MZN)</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for l in linhas %}
+      <tr>
+        <td>{{ l.get('nome_produto', l.get('produto', '')) }} <span class="muted">({{ l.get('codigo_produto', l.get('codigo', '')) }})</span></td>
+        <td class="num-right">{{ l.get('saldo_inicial_qtd', 0) }}</td>
+        <td class="num-right">{{ l.get('entradas_qtd', 0) }}</td>
+        <td class="num-right">{{ "%.2f"|format(l.get('entradas_val', l.get('entradas_valor', 0))|float) }}</td>
+        <td class="num-right">{{ l.get('saidas_qtd', 0) }}</td>
+        <td class="num-right">{{ "%.2f"|format(l.get('saidas_val', l.get('saidas_valor', 0))|float) }}</td>
+        <td class="num-right"><strong>{{ l.get('saldo_final_qtd', l.get('saldo_final', 0)) }}</strong></td>
+        <td class="num-right text-success"><strong>{{ "%.2f"|format(l.get('lucro', 0)|float) }}</strong></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tr class="totais-row">
+      <td><strong>TOTAIS DO PERÍODO</strong></td>
+      <td class="num-right">{{ totais.get('saldo_inicial_qtd', 0) }}</td>
+      <td class="num-right">{{ totais.get('entradas_qtd', 0) }}</td>
+      <td class="num-right">{{ "%.2f"|format(totais.get('entradas_val', totais.get('entradas_valor', 0))|float) }}</td>
+      <td class="num-right">{{ totais.get('saidas_qtd', 0) }}</td>
+      <td class="num-right">{{ "%.2f"|format(totais.get('saidas_val', totais.get('saidas_valor', 0))|float) }}</td>
+      <td class="num-right"><strong>{{ totais.get('saldo_final_qtd', totais.get('saldo_final', 0)) }}</strong></td>
+      <td class="num-right text-success"><strong>{{ "%.2f"|format(totais.get('lucro', 0)|float) }}</strong></td>
+    </tr>
+  </table>
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="panel">
+  <p class="empty-hint" style="padding:40px">
+    Seleccione um período (datas de início e fim) e clique em "Actualizar" para gerar o balancete.
+  </p>
+</div>
+{% endif %}
+
+{% endblock %}

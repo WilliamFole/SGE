@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block page_title %}Produtos{% endblock %}
+{% block title %}Produtos · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Produtos</h1>
+    <p class="page-sub">Cadastro e consulta de produtos (RF02)</p>
+  </div>
+  {% if current_user.perfil in ['Admin','Gerente'] %}
+  <a href="{{ url_for('produtos_novo') }}" class="btn btn-primary">+ Novo Produto</a>
+  {% endif %}
+</div>
+
+<form method="GET" class="filter-bar">
+  <input type="text" name="nome" placeholder="Buscar por nome..." value="{{ filtros.nome }}">
+  <input type="text" name="codigo" placeholder="Código..." value="{{ filtros.codigo }}">
+  <select name="categoria_id">
+    <option value="">Todas as categorias</option>
+    {% for c in categorias %}
+    <option value="{{ c.id_categoria }}" {{ 'selected' if filtros.categoria_id==c.id_categoria }}>{{ c.nome }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn-secondary">Filtrar</button>
+  <a href="{{ url_for('produtos_list') }}" class="btn btn-ghost">Limpar</a>
+</form>
+
+<div class="panel">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Código</th><th>Produto</th><th>Categoria</th><th>Unidade</th>
+        <th>Saldo</th><th>Custo</th><th>Venda</th><th>Situação</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for p in produtos %}
+      {% set sit = situacao(p.saldo_atual, p.estoque_minimo, p.estoque_maximo) %}
+      <tr>
+        <td class="mono">{{ p.codigo }}</td>
+        <td>{{ p.nome }}</td>
+        <td class="muted">{{ p.categoria_nome or '—' }}</td>
+        <td>{{ p.unidade }}{% if p.unidade != 'Unidade' %} ({{ p.qtd_por_unidade }}){% endif %}</td>
+        <td>{{ p.saldo_atual }}</td>
+        <td>{{ "%.2f"|format(p.preco_custo) }}</td>
+        <td>{{ "%.2f"|format(p.preco_venda) }}</td>
+        <td>
+          {% if sit == 'abaixo_minimo' %}<span class="tag tag-danger">Abaixo mínimo</span>
+          {% elif sit == 'acima_maximo' %}<span class="tag tag-warn">Acima máximo</span>
+          {% else %}<span class="tag tag-good">Normal</span>{% endif %}
+        </td>
+        <td class="actions-cell">
+          {% if current_user.perfil in ['Admin','Gerente'] %}
+          <a href="{{ url_for('produtos_editar', id_produto=p.id_produto) }}" class="link-action">Editar</a>
+          {% endif %}
+          {% if current_user.perfil == 'Admin' %}
+          <form method="POST" action="{{ url_for('produtos_excluir', id_produto=p.id_produto) }}" class="inline-form"
+                onsubmit="return confirm('Excluir este produto?');">
+            <button type="submit" class="link-action link-danger">Excluir</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="9" class="empty-hint">Nenhum produto encontrado.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
