@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block page_title %}Movimentações{% endblock %}
+{% block title %}Movimentações · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Movimentações</h1>
+    <p class="page-sub">Histórico de entradas e saídas — exportável em PDF e Excel</p>
+  </div>
+  <div class="header-actions">
+    <a href="{{ url_for('movimento_entrada') }}" class="btn btn-secondary">+ Entrada</a>
+    <a href="{{ url_for('movimento_saida') }}" class="btn btn-primary">+ Saída</a>
+  </div>
+</div>
+
+<form method="GET" class="filter-bar">
+  <label>Tipo
+    <select name="tipo">
+      <option value="">Todos</option>
+      <option value="Entrada" {{ 'selected' if tipo=='Entrada' }}>Entradas</option>
+      <option value="Saida" {{ 'selected' if tipo=='Saida' }}>Saídas</option>
+    </select>
+  </label>
+  <label>Categoria
+    <select name="categoria_id">
+      <option value="">Todas</option>
+      {% for c in categorias %}
+      <option value="{{ c.id_categoria }}" {{ 'selected' if categoria_id==c.id_categoria }}>{{ c.nome }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Data início
+    <input type="date" name="data_ini" value="{{ data_ini or '' }}">
+  </label>
+  <label>Data fim
+    <input type="date" name="data_fim" value="{{ data_fim or '' }}">
+  </label>
+  <button type="submit" class="btn btn-secondary">Filtrar</button>
+  <a href="{{ url_for('movimentos_list') }}" class="btn btn-ghost">Limpar</a>
+</form>
+
+<div class="report-toolbar no-print">
+  <span class="muted">{{ movimentos|length }} registo(s) encontrado(s)</span>
+  <div class="header-actions">
+    <a href="{{ url_for('movimentos_list', tipo=tipo, categoria_id=categoria_id, data_ini=data_ini, data_fim=data_fim, exportar='pdf') }}"
+       class="btn btn-secondary">⬇ Exportar PDF</a>
+    <a href="{{ url_for('movimentos_list', tipo=tipo, categoria_id=categoria_id, data_ini=data_ini, data_fim=data_fim, exportar='excel') }}"
+       class="btn btn-secondary">⬇ Exportar Excel</a>
+  </div>
+</div>
+
+<div class="panel">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Data/Hora</th>
+        <th>Tipo</th>
+        <th>Produto</th>
+        <th>Categoria</th>
+        <th>Qtd. origem</th>
+        <th>Qtd. (un. base)</th>
+        <th>Preço Unit.</th>
+        <th>Total</th>
+        <th>Usuário</th>
+        <th>Detalhe</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for m in movimentos %}
+      <tr>
+        <td class="mono">{{ m.data_hora }}</td>
+        <td>{% if m.tipo == 'Entrada' %}<span class="tag tag-good">Entrada</span>{% else %}<span class="tag tag-warn">Saída</span>{% endif %}</td>
+        <td>{{ m.produto_nome }} <span class="muted">({{ m.produto_codigo }})</span></td>
+        <td class="muted">{{ m.categoria_nome or '—' }}</td>
+        <td>{{ m.quantidade_original }} {{ m.unidade_original }}</td>
+        <td class="mono num-right">{{ m.quantidade }}</td>
+        <td class="num-right">{{ "%.2f"|format(m.preco_unitario) }}</td>
+        <td class="num-right"><strong>{{ "%.2f"|format(m.valor_total) }}</strong></td>
+        <td class="muted">{{ m.usuario_nome or '—' }}</td>
+        <td class="muted">{{ m.fornecedor or m.cliente or '—' }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="10" class="empty-hint">Nenhuma movimentação registada.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

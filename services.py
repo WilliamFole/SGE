@@ -1,15 +1,33 @@
 # -*- coding: utf-8 -*-
+<<<<<<< HEAD
 """Módulo services: regras de negócio e utilitários do SGE."""
+=======
+"""Módulo services: regras de negócio e utilitários do SGE.
+
+Este módulo agrupa funções reutilizáveis responsáveis por operações de
+arredondamento, validações, geração e gestão de códigos de produto,
+registro de entradas/saídas, cálculo de balancetes e relatórios, além de
+mecanismos de segurança (tokens de recuperação, bloqueio de login) e
+outras regras de negócio aplicadas pela aplicação.
+
+As funções aqui são usadas por app.py e por outros módulos para garantir
+coerência nas regras de negócio do sistema.
+"""
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 import re
 import secrets
 import math
 from datetime import datetime, timedelta
 from database import get_conn, get_config, registrar_auditoria
+<<<<<<< HEAD
 from werkzeug.security import generate_password_hash, check_password_hash
+=======
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
 class RegraNegocioError(Exception):
     pass
 
+<<<<<<< HEAD
 UNIDADES_VALIDAS = ("Caixa", "Embalagem", "Unidade", "kg")
 UNIDADES_DECIMAIS = ("kg",)
 
@@ -50,11 +68,49 @@ def ceil5(valor, casas=5):
         return 0.0
     if casas <= 0:
         return int(math.ceil(valor_float - 1e-12))
+=======
+# ---------------------------------------------------------------------------
+# Utilitários de arredondamento (apenas para valores monetários)
+# ---------------------------------------------------------------------------
+def round5(valor, casas=2):
+    """Arredonda valores numéricos para casas decimais e preserva inteiros."""
+    if valor is None:
+        return 0 if casas == 0 else 0.0
+    try:
+        valor_float = float(valor)
+    except (TypeError, ValueError):
+        return 0 if casas == 0 else 0.0
+
+    valor_arredondado = round(valor_float + 1e-12, casas)
+    if casas == 0:
+        return int(valor_arredondado)
+    if abs(valor_arredondado - round(valor_arredondado)) < 1e-9:
+        return int(valor_arredondado)
+    return valor_arredondado
+
+
+def ceil5(valor, casas=5):
+    """Arredonda valores numéricos por excesso para até N casas decimais."""
+    if valor is None:
+        return 0 if casas == 0 else 0.0
+    try:
+        valor_float = float(valor)
+    except (TypeError, ValueError):
+        return 0 if casas == 0 else 0.0
+
+    if casas == 0:
+        return int(math.ceil(valor_float - 1e-12))
+
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     fator = 10 ** casas
     return math.ceil(valor_float * fator - 1e-12) / fator
 
 
 def arredondar_moeda(valor):
+<<<<<<< HEAD
+=======
+    """Arredonda para 2 casas decimais (padrão monetário)."""
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     return round5(valor, 2)
 
 
@@ -173,6 +229,7 @@ def consumir_token_recuperacao(conn, id_usuario):
 
 
 # ---------------------------------------------------------------------------
+<<<<<<< HEAD
 # Código de produto — SEQUENCIAL (fix 1.1)
 # ---------------------------------------------------------------------------
 def _proximo_numero_codigo(conn):
@@ -212,10 +269,22 @@ def gerar_codigo_produto(conn):
         existe_prov = conn.execute(
             "SELECT 1 FROM codigos_provisorios WHERE codigo=?", (codigo,)
         ).fetchone()   # ← sem AND usado=0
+=======
+# Código de produto
+# ---------------------------------------------------------------------------
+def gerar_codigo_produto(conn):
+    row = conn.execute("SELECT COUNT(*) AS c FROM produtos").fetchone()
+    proximo = row["c"] + 1
+    while True:
+        codigo = f"PRD{proximo:05d}"
+        existe = conn.execute("SELECT 1 FROM produtos WHERE codigo=?", (codigo,)).fetchone()
+        existe_prov = conn.execute("SELECT 1 FROM codigos_provisorios WHERE codigo=? AND usado=0", (codigo,)).fetchone()
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         if not existe and not existe_prov:
             return codigo
         proximo += 1
 
+<<<<<<< HEAD
 def reservar_codigo_provisorio(conn, sessao_id):
     """Reserva um código provisório para a sessão.
 
@@ -253,6 +322,27 @@ def reservar_codigo_provisorio(conn, sessao_id):
     )
     conn.commit()
     return codigo
+=======
+
+def reservar_codigo_provisorio(conn, sessao_id):
+    row = conn.execute("SELECT COUNT(*) AS c FROM produtos").fetchone()
+    proximo = row["c"] + 1
+    tentativas = 0
+    while tentativas < 1000:
+        tentativas += 1
+        codigo = f"PRD{proximo:05d}"
+        existe = conn.execute("SELECT 1 FROM produtos WHERE codigo=?", (codigo,)).fetchone()
+        existe_prov = conn.execute("SELECT 1 FROM codigos_provisorios WHERE codigo=? AND usado=0", (codigo,)).fetchone()
+        if not existe and not existe_prov:
+            conn.execute(
+                "INSERT INTO codigos_provisorios (codigo, sessao_id, usado, data_criacao) VALUES (?,?,0,?)",
+                (codigo, sessao_id, datetime.now().isoformat(timespec="seconds")),
+            )
+            conn.commit()
+            return codigo
+        proximo += 1
+    return f"PRD{int(datetime.now().timestamp()):05d}"
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
 
 def liberar_codigo_provisorio(conn, sessao_id, codigo=None):
@@ -262,9 +352,13 @@ def liberar_codigo_provisorio(conn, sessao_id, codigo=None):
             (sessao_id, codigo),
         )
     else:
+<<<<<<< HEAD
         conn.execute(
             "UPDATE codigos_provisorios SET usado=1 WHERE sessao_id=? AND usado=0", (sessao_id,)
         )
+=======
+        conn.execute("UPDATE codigos_provisorios SET usado=1 WHERE sessao_id=? AND usado=0", (sessao_id,))
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     conn.commit()
 
 
@@ -277,6 +371,7 @@ def usar_codigo_provisorio(conn, sessao_id, codigo):
 
 
 # ---------------------------------------------------------------------------
+<<<<<<< HEAD
 # Conversão de unidades
 # ---------------------------------------------------------------------------
 def converter_para_unidade_base(quantidade_original, qtd_por_unidade, unidade_original="Unidade"):
@@ -321,6 +416,21 @@ def saldo_atual(conn, id_produto):
         return float(row["saldo_atual"] or 0)
     except (TypeError, ValueError):
         return 0.0
+=======
+# Conversão de unidades (agora retorna inteiro)
+# ---------------------------------------------------------------------------
+def converter_para_unidade_base(quantidade_original, qtd_por_unidade, unidade_original="Unidade"):
+    """Converte para unidade base (avulsa) e retorna um inteiro."""
+    if unidade_original == "Unidade":
+        return int(quantidade_original) * 1
+    else:
+        return int(quantidade_original) * int(qtd_por_unidade)
+
+
+def saldo_atual(conn, id_produto):
+    row = conn.execute("SELECT saldo_atual FROM estoque WHERE id_produto=?", (id_produto,)).fetchone()
+    return int(row["saldo_atual"]) if row else 0
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
 
 def _garantir_linha_estoque(conn, id_produto):
@@ -361,12 +471,20 @@ def atualizar_produto_refletir_estoque(conn, id_produto, dados_antigos, dados_no
 
 
 # ---------------------------------------------------------------------------
+<<<<<<< HEAD
 # Código de segurança
 # ---------------------------------------------------------------------------
+=======
+# Código de segurança para alteração de produto (com hash)
+# ---------------------------------------------------------------------------
+from werkzeug.security import generate_password_hash, check_password_hash
+
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 def validar_codigo_alteracao_produto(codigo_fornecido):
     codigo_cadastrado = get_config("codigo_alteracao_produto", "")
     if not codigo_cadastrado:
         return True
+<<<<<<< HEAD
     try:
         return check_password_hash(codigo_cadastrado, codigo_fornecido or "")
     except Exception:
@@ -375,6 +493,13 @@ def validar_codigo_alteracao_produto(codigo_fornecido):
 
 # ---------------------------------------------------------------------------
 # Registrar entrada (compra) — usa float (kg)
+=======
+    return check_password_hash(codigo_cadastrado, codigo_fornecido)
+
+
+# ---------------------------------------------------------------------------
+# Registrar entrada (compra)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 # ---------------------------------------------------------------------------
 def registrar_entrada(conn, id_produto, quantidade_original, unidade_original,
                        preco_unitario, id_usuario, nota_fiscal=None,
@@ -382,13 +507,17 @@ def registrar_entrada(conn, id_produto, quantidade_original, unidade_original,
                        ip_address=None):
     if not validar_produto_cadastrado(conn, id_produto):
         raise RegraNegocioError("Selecione um produto cadastrado e ativo.")
+<<<<<<< HEAD
     if unidade_original not in UNIDADES_VALIDAS:
         raise RegraNegocioError("Unidade inválida.")
+=======
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
     produto = conn.execute("SELECT * FROM produtos WHERE id_produto=?", (id_produto,)).fetchone()
     if not produto:
         raise RegraNegocioError("Produto não encontrado.")
 
+<<<<<<< HEAD
     if produto["unidade"] in ("Unidade", "kg") and unidade_original != produto["unidade"]:
         raise RegraNegocioError(
             f"Este produto só pode ser movimentado em '{produto['unidade']}'."
@@ -410,10 +539,20 @@ def registrar_entrada(conn, id_produto, quantidade_original, unidade_original,
     qtd_original_num = float(quantidade_original)
     valor_total = arredondar_moeda(qtd_original_num * preco_float)
     preco_unitario_base = arredondar_moeda(valor_total / qtd_base) if qtd_base else 0.0
+=======
+    qtd_base = converter_para_unidade_base(quantidade_original, produto["qtd_por_unidade"], unidade_original)
+    if qtd_base <= 0:
+        raise RegraNegocioError("Quantidade de entrada deve ser maior que zero.")
+
+    fator = int(produto["qtd_por_unidade"]) if unidade_original in ("Caixa", "Embalagem") else 1
+    preco_unitario_base = preco_unitario / fator if fator else preco_unitario
+    preco_unitario_base = arredondar_moeda(preco_unitario_base)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
     _garantir_linha_estoque(conn, id_produto)
     saldo = saldo_atual(conn, id_produto)
 
+<<<<<<< HEAD
     # Cálculo do novo custo consoante o método configurado
     metodo = get_config("metodo_custeio", "media_ponderada")
     custo_atual = float(produto["preco_custo"] or 0)
@@ -433,6 +572,17 @@ def registrar_entrada(conn, id_produto, quantidade_original, unidade_original,
         novo_custo = preco_unitario_base
         atualizar_custo = True
 
+=======
+    metodo = get_config("metodo_custeio", "media_ponderada")
+    custo_atual = produto["preco_custo"] or 0
+    if metodo == "media_ponderada" and (saldo + qtd_base) > 0:
+        novo_custo = ((saldo * custo_atual) + (qtd_base * preco_unitario_base)) / (saldo + qtd_base)
+    else:
+        novo_custo = preco_unitario_base
+    novo_custo = arredondar_moeda(novo_custo)
+
+    valor_total = arredondar_moeda(qtd_base * preco_unitario_base)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     data_hora = data_hora or datetime.now().isoformat(timespec="seconds")
 
     cur = conn.execute(
@@ -440,7 +590,11 @@ def registrar_entrada(conn, id_produto, quantidade_original, unidade_original,
            (tipo, id_produto, data_hora, quantidade, quantidade_original, unidade_original,
             preco_unitario, valor_total, id_usuario, nota_fiscal, fornecedor, observacoes, lucro)
            VALUES ('Entrada',?,?,?,?,?,?,?,?,?,?,?,0)""",
+<<<<<<< HEAD
         (id_produto, data_hora, qtd_base, qtd_original_num, unidade_original,
+=======
+        (id_produto, data_hora, qtd_base, int(quantidade_original), unidade_original,
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
          preco_unitario_base, valor_total, id_usuario, nota_fiscal,
          fornecedor or produto["fornecedor"], observacoes),
     )
@@ -450,8 +604,12 @@ def registrar_entrada(conn, id_produto, quantidade_original, unidade_original,
         "UPDATE estoque SET saldo_atual = saldo_atual + ?, ultima_atualizacao=? WHERE id_produto=?",
         (qtd_base, data_hora, id_produto),
     )
+<<<<<<< HEAD
     if atualizar_custo:
         conn.execute("UPDATE produtos SET preco_custo=? WHERE id_produto=?", (novo_custo, id_produto))
+=======
+    conn.execute("UPDATE produtos SET preco_custo=? WHERE id_produto=?", (novo_custo, id_produto))
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
     registrar_auditoria(conn, id_usuario, "movimentos", movimento_id, "INSERT",
                         None, {"tipo": "Entrada", "id_produto": id_produto,
@@ -469,13 +627,17 @@ def registrar_saida(conn, id_produto, quantidade_original, unidade_original,
                      observacoes=None, data_hora=None, ip_address=None):
     if not validar_produto_cadastrado(conn, id_produto):
         raise RegraNegocioError("Selecione um produto cadastrado e ativo.")
+<<<<<<< HEAD
     if unidade_original not in UNIDADES_VALIDAS:
         raise RegraNegocioError("Unidade inválida.")
+=======
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
     produto = conn.execute("SELECT * FROM produtos WHERE id_produto=?", (id_produto,)).fetchone()
     if not produto:
         raise RegraNegocioError("Produto não encontrado.")
 
+<<<<<<< HEAD
     if produto["unidade"] in ("Unidade", "kg") and unidade_original != produto["unidade"]:
         raise RegraNegocioError(
             f"Este produto só pode ser movimentado em '{produto['unidade']}'."
@@ -496,11 +658,21 @@ def registrar_saida(conn, id_produto, quantidade_original, unidade_original,
     qtd_original_num = float(quantidade_original)
     valor_total = arredondar_moeda(qtd_original_num * preco_float)
     preco_unitario_base = arredondar_moeda(valor_total / qtd_base) if qtd_base else 0.0
+=======
+    qtd_base = converter_para_unidade_base(quantidade_original, produto["qtd_por_unidade"], unidade_original)
+    if qtd_base <= 0:
+        raise RegraNegocioError("Quantidade de saída deve ser maior que zero.")
+
+    fator = int(produto["qtd_por_unidade"]) if unidade_original in ("Caixa", "Embalagem") else 1
+    preco_unitario_base = preco_unitario / fator if fator else preco_unitario
+    preco_unitario_base = arredondar_moeda(preco_unitario_base)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
     _garantir_linha_estoque(conn, id_produto)
     saldo = saldo_atual(conn, id_produto)
 
     permitir_negativo = get_config("permitir_estoque_negativo", "0") == "1"
+<<<<<<< HEAD
 
     custo_medio = float(produto["preco_custo"] or 0)
     custo_total_venda = arredondar_moeda(custo_medio * qtd_base)
@@ -525,16 +697,38 @@ def registrar_saida(conn, id_produto, quantidade_original, unidade_original,
                 f"Estoque insuficiente. Saldo atual: {saldo}, solicitado: {qtd_base}."
             )
 
+=======
+    if not permitir_negativo and qtd_base > saldo + 1e-9:
+        raise RegraNegocioError(f"Estoque insuficiente. Saldo atual: {saldo}, solicitado: {qtd_base}.")
+
+    custo_medio = produto["preco_custo"] or 0
+    lucro = arredondar_moeda((preco_unitario_base - custo_medio) * qtd_base)
+    valor_total = arredondar_moeda(qtd_base * preco_unitario_base)
+    data_hora = data_hora or datetime.now().isoformat(timespec="seconds")
+
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     cur = conn.execute(
         """INSERT INTO movimentos
            (tipo, id_produto, data_hora, quantidade, quantidade_original, unidade_original,
             preco_unitario, valor_total, id_usuario, cliente, forma_pagamento, observacoes, lucro)
            VALUES ('Saida',?,?,?,?,?,?,?,?,?,?,?,?)""",
+<<<<<<< HEAD
         (id_produto, data_hora, qtd_base, qtd_original_num, unidade_original,
+=======
+        (id_produto, data_hora, qtd_base, int(quantidade_original), unidade_original,
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
          preco_unitario_base, valor_total, id_usuario, cliente, forma_pagamento, observacoes, lucro),
     )
     movimento_id = cur.lastrowid
 
+<<<<<<< HEAD
+=======
+    conn.execute(
+        "UPDATE estoque SET saldo_atual = saldo_atual - ?, ultima_atualizacao=? WHERE id_produto=?",
+        (qtd_base, data_hora, id_produto),
+    )
+
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     registrar_auditoria(conn, id_usuario, "movimentos", movimento_id, "INSERT",
                         None, {"tipo": "Saida", "id_produto": id_produto,
                                "quantidade": qtd_base, "valor_total": valor_total,
@@ -548,7 +742,11 @@ def registrar_saida(conn, id_produto, quantidade_original, unidade_original,
 
 
 # ---------------------------------------------------------------------------
+<<<<<<< HEAD
 # Situação do estoque / alertas
+=======
+# Situação do estoque
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 # ---------------------------------------------------------------------------
 def situacao_estoque(saldo, minimo, maximo):
     if saldo < (minimo or 0):
@@ -558,6 +756,12 @@ def situacao_estoque(saldo, minimo, maximo):
     return "normal"
 
 
+<<<<<<< HEAD
+=======
+# ---------------------------------------------------------------------------
+# Alertas
+# ---------------------------------------------------------------------------
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 def produtos_proximos_validade(conn):
     dias = int(get_config("dias_alerta_validade", "7"))
     limite = (datetime.now() + timedelta(days=dias)).date().isoformat()
@@ -619,6 +823,7 @@ def sugestoes_precos(conn, dias=30):
 
 
 # ---------------------------------------------------------------------------
+<<<<<<< HEAD
 # Balancete — usa float (kg)
 # ---------------------------------------------------------------------------
 def calcular_balancete(conn, periodo, data_inicio, data_fim, id_categoria=None, id_produto=None):
@@ -644,11 +849,29 @@ def calcular_balancete(conn, periodo, data_inicio, data_fim, id_categoria=None, 
         params.append(id_categoria)
     if id_produto:
         sql_prod += " AND p.id_produto = ?"
+=======
+# Balancetes (com todas as chaves exigidas)
+# ---------------------------------------------------------------------------
+def calcular_balancete(conn, periodo, data_inicio, data_fim, id_categoria=None, id_produto=None):
+    dt_ini = data_inicio + " 00:00:00"
+    dt_fim = data_fim + " 23:59:59"
+
+    sql_prod = """SELECT p.*, c.nome AS categoria_nome
+                  FROM produtos p LEFT JOIN categorias c ON c.id_categoria=p.id_categoria
+                  WHERE p.ativo=1"""
+    params = []
+    if id_categoria:
+        sql_prod += " AND p.id_categoria=?"
+        params.append(id_categoria)
+    if id_produto:
+        sql_prod += " AND p.id_produto=?"
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         params.append(id_produto)
     sql_prod += " ORDER BY p.nome"
     produtos = conn.execute(sql_prod, params).fetchall()
 
     linhas = []
+<<<<<<< HEAD
     total_saldo_ini_qtd = 0.0
     total_entradas_qtd = 0.0
     total_saidas_qtd = 0.0
@@ -659,10 +882,20 @@ def calcular_balancete(conn, periodo, data_inicio, data_fim, id_categoria=None, 
     total_saldo_ini_valor_custo = 0.0
     total_saldo_ini_valor_venda = 0.0
     total_saldo_fin_valor_custo = 0.0
+=======
+    total_saldo_ini_qtd = 0
+    total_entradas_qtd = 0
+    total_saidas_qtd = 0
+    total_saldo_fin_qtd = 0
+    total_entradas_val = 0
+    total_saidas_val = 0
+    total_lucro = 0
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
     for p in produtos:
         idp = p["id_produto"]
 
+<<<<<<< HEAD
         row_ini = conn.execute(
             """SELECT COALESCE(SUM(CASE WHEN tipo='Entrada' THEN quantidade ELSE -quantidade END),0) AS s
                FROM movimentos WHERE id_produto=? AND data_hora < ?""",
@@ -698,6 +931,31 @@ def calcular_balancete(conn, periodo, data_inicio, data_fim, id_categoria=None, 
         saldo_ini_valor_custo = arredondar_moeda(saldo_ini * custo_atual)
         saldo_ini_valor_venda = arredondar_moeda(saldo_ini * venda_atual)
         saldo_fin_valor_custo = arredondar_moeda(saldo_fin * custo_atual)
+=======
+        saldo_ini = 0
+        rows_antes = conn.execute(
+            """SELECT COALESCE(SUM(CASE WHEN tipo='Entrada' THEN quantidade ELSE -quantidade END),0) s
+               FROM movimentos WHERE id_produto=? AND data_hora < ?""",
+            (idp, dt_ini),
+        ).fetchone()
+        saldo_ini = int(rows_antes["s"])
+
+        ent_q = conn.execute(
+            "SELECT COALESCE(SUM(quantidade),0) s, COALESCE(SUM(valor_total),0) v FROM movimentos WHERE id_produto=? AND tipo='Entrada' AND data_hora BETWEEN ? AND ?",
+            (idp, dt_ini, dt_fim),
+        ).fetchone()
+        sai_q = conn.execute(
+            "SELECT COALESCE(SUM(quantidade),0) s, COALESCE(SUM(valor_total),0) v, COALESCE(SUM(lucro),0) l FROM movimentos WHERE id_produto=? AND tipo='Saida' AND data_hora BETWEEN ? AND ?",
+            (idp, dt_ini, dt_fim),
+        ).fetchone()
+
+        entradas_qtd = int(ent_q["s"])
+        entradas_val = arredondar_moeda(ent_q["v"])
+        saidas_qtd = int(sai_q["s"])
+        saidas_val = arredondar_moeda(sai_q["v"])
+        lucro = arredondar_moeda(sai_q["l"])
+        saldo_fin = int(saldo_ini + entradas_qtd - saidas_qtd)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
         total_saldo_ini_qtd += saldo_ini
         total_entradas_qtd += entradas_qtd
@@ -706,20 +964,30 @@ def calcular_balancete(conn, periodo, data_inicio, data_fim, id_categoria=None, 
         total_entradas_val += entradas_val
         total_saidas_val += saidas_val
         total_lucro += lucro
+<<<<<<< HEAD
         total_saldo_ini_valor_custo += saldo_ini_valor_custo
         total_saldo_ini_valor_venda += saldo_ini_valor_venda
         total_saldo_fin_valor_custo += saldo_fin_valor_custo
+=======
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
         linhas.append({
             "id_produto": idp,
             "codigo": p["codigo"],
             "produto": p["nome"],
             "categoria": p["categoria_nome"] or "—",
+<<<<<<< HEAD
             "unidade": p["unidade"],
             "saldo_inicial": saldo_ini,
             "saldo_inicial_qtd": saldo_ini,
             "saldo_inicial_valor_custo": saldo_ini_valor_custo,
             "saldo_inicial_valor_venda": saldo_ini_valor_venda,
+=======
+            "saldo_inicial": saldo_ini,
+            "saldo_inicial_qtd": saldo_ini,
+            "saldo_inicial_valor_custo": 0,
+            "saldo_inicial_valor_venda": 0,
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
             "entradas_qtd": entradas_qtd,
             "entradas_val": entradas_val,
             "entradas_valor": entradas_val,
@@ -730,7 +998,11 @@ def calcular_balancete(conn, periodo, data_inicio, data_fim, id_categoria=None, 
             "saidas_valor_venda": saidas_val,
             "saldo_final": saldo_fin,
             "saldo_final_qtd": saldo_fin,
+<<<<<<< HEAD
             "saldo_final_valor_custo": saldo_fin_valor_custo,
+=======
+            "saldo_final_valor_custo": 0,
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
             "lucro": lucro,
             "debito": entradas_val,
             "credito": saidas_val,
@@ -739,6 +1011,7 @@ def calcular_balancete(conn, periodo, data_inicio, data_fim, id_categoria=None, 
         })
 
     totais = {
+<<<<<<< HEAD
         "saldo_inicial": round(total_saldo_ini_qtd, 3),
         "saldo_inicial_qtd": round(total_saldo_ini_qtd, 3),
         "saldo_inicial_valor_custo": arredondar_moeda(total_saldo_ini_valor_custo),
@@ -755,13 +1028,36 @@ def calcular_balancete(conn, periodo, data_inicio, data_fim, id_categoria=None, 
         "saldo_final_qtd": round(total_saldo_fin_qtd, 3),
         "saldo_final_valor_custo": arredondar_moeda(total_saldo_fin_valor_custo),
         "lucro": arredondar_moeda(total_lucro),
+=======
+        "saldo_inicial": total_saldo_ini_qtd,
+        "saldo_inicial_qtd": total_saldo_ini_qtd,
+        "saldo_inicial_valor_custo": 0,
+        "saldo_inicial_valor_venda": 0,
+        "entradas_qtd": total_entradas_qtd,
+        "entradas_val": total_entradas_val,
+        "entradas_valor": total_entradas_val,
+        "entradas_valor_venda": total_entradas_val,
+        "saidas_qtd": total_saidas_qtd,
+        "saidas_val": total_saidas_val,
+        "saidas_valor": total_saidas_val,
+        "saidas_valor_venda": total_saidas_val,
+        "saldo_final": total_saldo_fin_qtd,
+        "saldo_final_qtd": total_saldo_fin_qtd,
+        "saldo_final_valor_custo": 0,
+        "lucro": total_lucro,
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     }
     return linhas, totais
 
 
 def calcular_extrato_categoria(conn, id_categoria, data_inicio, data_fim):
+<<<<<<< HEAD
     dt_ini = data_inicio + "T00:00:00"
     dt_fim = data_fim + "T23:59:59"
+=======
+    dt_ini = data_inicio + " 00:00:00"
+    dt_fim = data_fim + " 23:59:59"
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
     movs = conn.execute(
         """SELECT m.*, p.nome AS produto_nome, p.codigo AS produto_codigo,
@@ -774,6 +1070,7 @@ def calcular_extrato_categoria(conn, id_categoria, data_inicio, data_fim):
     ).fetchall()
 
     linhas = []
+<<<<<<< HEAD
     saldo = 0.0
     entradas_acum = 0.0
     saidas_acum = 0.0
@@ -785,6 +1082,19 @@ def calcular_extrato_categoria(conn, id_categoria, data_inicio, data_fim):
             entradas_acum += float(m["valor_total"] or 0)
         else:
             saidas_acum += float(m["valor_total"] or 0)
+=======
+    saldo = 0
+    entradas_acum = 0
+    saidas_acum = 0
+    for m in movs:
+        sinal = 1 if m["tipo"] == "Entrada" else -1
+        qtd = m["quantidade"]
+        saldo += sinal * qtd
+        if m["tipo"] == "Entrada":
+            entradas_acum += m["valor_total"]
+        else:
+            saidas_acum += m["valor_total"]
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         linhas.append({
             "data_hora": m["data_hora"],
             "tipo": m["tipo"],
@@ -798,6 +1108,7 @@ def calcular_extrato_categoria(conn, id_categoria, data_inicio, data_fim):
             "entradas_acum_valor": arredondar_moeda(entradas_acum),
             "saidas_acum_valor": arredondar_moeda(saidas_acum),
         })
+<<<<<<< HEAD
     return linhas, saldo, arredondar_moeda(entradas_acum), arredondar_moeda(saidas_acum)
 
 
@@ -899,11 +1210,22 @@ def calcular_extrato_produto(conn, id_produto, data_inicio, data_fim):
 # Cotações
 # ---------------------------------------------------------------------------
 def gerar_numero_cotacao(conn):
+=======
+    return linhas, saldo, entradas_acum, saidas_acum
+
+
+# ---------------------------------------------------------------------------
+# Cotações
+# ---------------------------------------------------------------------------
+def gerar_numero_cotacao(conn):
+    """Gera número sequencial para cotação (ex: COT-0001)."""
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     row = conn.execute("SELECT COUNT(*) AS c FROM cotacoes").fetchone()
     prox = row["c"] + 1
     return f"COT-{prox:04d}"
 
 
+<<<<<<< HEAD
 def _calcular_total_itens(itens):
     total = 0.0
     for item in itens:
@@ -916,6 +1238,13 @@ def _calcular_total_itens(itens):
 
 def criar_cotacao(conn, id_usuario, cliente_nome, cliente_email=None, cliente_telefone=None,
                   data_validade=None, observacoes=None, itens=None):
+=======
+def criar_cotacao(conn, id_usuario, cliente_nome, cliente_email=None, cliente_telefone=None,
+                  data_validade=None, observacoes=None, itens=None):
+    """
+    itens: lista de dicionários com id_produto, quantidade, preco_unitario, desconto_percentual
+    """
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     if not itens:
         raise RegraNegocioError("A cotação deve ter pelo menos um item.")
 
@@ -924,7 +1253,17 @@ def criar_cotacao(conn, id_usuario, cliente_nome, cliente_email=None, cliente_te
     if not data_validade:
         data_validade = (datetime.now() + timedelta(days=30)).isoformat(timespec="seconds")
 
+<<<<<<< HEAD
     valor_total = _calcular_total_itens(itens)
+=======
+    valor_total = 0
+    for item in itens:
+        qtd = int(item["quantidade"])
+        preco = arredondar_moeda(item["preco_unitario"])
+        desconto = float(item.get("desconto_percentual", 0))
+        subtotal = qtd * preco * (1 - desconto/100)
+        valor_total += arredondar_moeda(subtotal)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
     cur = conn.execute(
         """INSERT INTO cotacoes
@@ -938,15 +1277,25 @@ def criar_cotacao(conn, id_usuario, cliente_nome, cliente_email=None, cliente_te
 
     for item in itens:
         qtd = int(item["quantidade"])
+<<<<<<< HEAD
         preco = float(item["preco_unitario"])
         desconto = float(item.get("desconto_percentual", 0) or 0)
         subtotal = arredondar_moeda(qtd * preco * (1 - desconto / 100))
+=======
+        preco = arredondar_moeda(item["preco_unitario"])
+        desconto = float(item.get("desconto_percentual", 0))
+        subtotal = qtd * preco * (1 - desconto/100)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         conn.execute(
             """INSERT INTO itens_cotacao
                (id_cotacao, id_produto, quantidade, preco_unitario, desconto_percentual, valor_total)
                VALUES (?,?,?,?,?,?)""",
+<<<<<<< HEAD
             (id_cotacao, item["id_produto"], qtd, arredondar_moeda(preco),
              desconto, subtotal)
+=======
+            (id_cotacao, item["id_produto"], qtd, preco, desconto, arredondar_moeda(subtotal))
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         )
 
     conn.commit()
@@ -969,6 +1318,7 @@ def obter_cotacao(conn, id_cotacao):
     return dict(cotacao), [dict(item) for item in itens]
 
 
+<<<<<<< HEAD
 def atualizar_cotacao(conn, id_cotacao, id_usuario, cliente_nome,
                       cliente_email=None, cliente_telefone=None,
                       data_validade=None, observacoes=None, itens=None):
@@ -1013,11 +1363,17 @@ def atualizar_cotacao(conn, id_cotacao, id_usuario, cliente_nome,
     return id_cotacao
 
 
+=======
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 def atualizar_status_cotacao(conn, id_cotacao, novo_status, id_usuario):
     cotacao = conn.execute("SELECT * FROM cotacoes WHERE id_cotacao=?", (id_cotacao,)).fetchone()
     if not cotacao:
         raise RegraNegocioError("Cotação não encontrada.")
+<<<<<<< HEAD
     if cotacao["status"] in ("Aprovada", "Rejeitada", "Convertida"):
+=======
+    if cotacao["status"] in ("Aprovada", "Rejeitada"):
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         raise RegraNegocioError("Cotação já está finalizada.")
     conn.execute("UPDATE cotacoes SET status=? WHERE id_cotacao=?", (novo_status, id_cotacao))
     registrar_auditoria(conn, id_usuario, "cotacoes", id_cotacao, "UPDATE",
@@ -1026,6 +1382,7 @@ def atualizar_status_cotacao(conn, id_cotacao, novo_status, id_usuario):
 
 
 def converter_cotacao_em_venda(conn, id_cotacao, id_usuario):
+<<<<<<< HEAD
     res = obter_cotacao(conn, id_cotacao)
     if not res:
         raise RegraNegocioError("Cotação não encontrada.")
@@ -1033,12 +1390,26 @@ def converter_cotacao_em_venda(conn, id_cotacao, id_usuario):
     if cotacao["status"] != "Aprovada":
         raise RegraNegocioError("Apenas cotações aprovadas podem ser convertidas em venda.")
 
+=======
+    """Converte uma cotação aprovada em movimento de saída (venda)."""
+    cotacao, itens = obter_cotacao(conn, id_cotacao)
+    if not cotacao:
+        raise RegraNegocioError("Cotação não encontrada.")
+    if cotacao["status"] != "Aprovada":
+        raise RegraNegocioError("Apenas cotações aprovadas podem ser convertidas em venda.")
+
+    # Para cada item, registra uma saída
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     for item in itens:
         registrar_saida(
             conn,
             id_produto=item["id_produto"],
             quantidade_original=item["quantidade"],
+<<<<<<< HEAD
             unidade_original="Unidade",
+=======
+            unidade_original="Unidade",  # ou usar a unidade do produto
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
             preco_unitario=item["preco_unitario"],
             id_usuario=id_usuario,
             cliente=cotacao["nome_cliente"],
@@ -1046,6 +1417,7 @@ def converter_cotacao_em_venda(conn, id_cotacao, id_usuario):
             ip_address=None
         )
 
+<<<<<<< HEAD
     atualizar_status_cotacao(conn, id_cotacao, "Convertida", id_usuario)
 
 
@@ -2262,3 +2634,6 @@ def obter_auditoria(conn, id_auditoria):
         (id_auditoria,),
     ).fetchone()
     return dict(aud) if aud else None
+=======
+    atualizar_status_cotacao(conn, id_cotacao, "Convertida", id_usuario)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9

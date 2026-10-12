@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block page_title %}Nova {{ 'Entrada' if tipo=='Entrada' else 'Saída' }}{% endblock %}
+{% block title %}Nova {{ 'Entrada' if tipo=='Entrada' else 'Saída' }} · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Nova {{ 'Entrada (Compra)' if tipo=='Entrada' else 'Saída (Venda)' }}</h1>
+    <p class="page-sub">{{ 'RF03 — Registo de entrada de produtos no estoque' if tipo=='Entrada' else 'RF04 — Registo de saída de produtos do estoque' }}</p>
+  </div>
+</div>
+
+<div class="panel form-panel">
+  <form method="POST" class="grid-form" id="form-movimento">
+    <label class="span-2">Produto *
+      <input type="text" id="busca-produto" placeholder="Digite o nome ou código do produto..." autocomplete="off" required>
+      <input type="hidden" name="id_produto" id="id_produto" required>
+      <div id="sugestoes-produto" class="autocomplete-list"></div>
+    </label>
+
+    <div class="span-2 produto-info" id="produto-info" style="display:none;">
+      <span>Saldo atual: <strong id="info-saldo">-</strong></span>
+      <span>Unidade: <strong id="info-unidade">-</strong></span>
+      <span>{{ 'Último custo' if tipo=='Entrada' else 'Preço de venda padrão' }}: <strong id="info-preco">-</strong></span>
+    </div>
+
+    <label>Quantidade *
+      <input type="number" step="0.01" min="0.01" name="quantidade" required>
+    </label>
+    <label>Unidade da {{ 'compra' if tipo=='Entrada' else 'venda' }} *
+      <select name="unidade_original" id="unidade_original" required>
+        <option value="Unidade">Unidade</option>
+        <option value="Caixa">Caixa</option>
+        <option value="Embalagem">Embalagem</option>
+      </select>
+    </label>
+    <label>{{ 'Preço de custo (MZN) *' if tipo=='Entrada' else 'Preço de venda (MZN) *' }} <span class="hint">(referente à unidade escolhida acima)</span>
+      <input type="number" step="0.01" min="0" name="preco_unitario" id="preco_unitario" required>
+    </label>
+
+    {% if tipo == 'Entrada' %}
+    <label>Nota fiscal
+      <input type="text" name="nota_fiscal" maxlength="20">
+    </label>
+    <label>Fornecedor
+      <input type="text" name="fornecedor" maxlength="100" id="fornecedor">
+    </label>
+    {% else %}
+    <label>Cliente <span class="hint">(opcional)</span>
+      <input type="text" name="cliente" maxlength="100">
+    </label>
+    <label>Forma de pagamento <span class="hint">(opcional)</span>
+      <select name="forma_pagamento">
+        <option value="">—</option>
+        <option value="Dinheiro">Dinheiro</option>
+        <option value="M-Pesa">M-Pesa</option>
+        <option value="Cartão">Cartão</option>
+        <option value="Transferência">Transferência</option>
+      </select>
+    </label>
+    {% endif %}
+
+    <label class="span-2">Observações
+      <textarea name="observacoes" rows="2"></textarea>
+    </label>
+
+    <div class="form-actions span-2">
+      <button type="submit" class="btn btn-primary">Registar {{ 'Entrada' if tipo=='Entrada' else 'Saída' }}</button>
+      <a href="{{ url_for('movimentos_list') }}" class="btn btn-ghost">Ver Movimentações</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const tipoMovimento = "{{ tipo }}";
+const buscaInput = document.getElementById('busca-produto');
+const sugestoesBox = document.getElementById('sugestoes-produto');
+let produtoSelecionado = null;
+
+buscaInput.addEventListener('input', async function() {
+  const termo = this.value.trim();
+  document.getElementById('id_produto').value = '';
+  produtoSelecionado = null;
+  document.getElementById('produto-info').style.display = 'none';
+  if (termo.length < 1) { sugestoesBox.innerHTML=''; return; }
+  const resp = await fetch(`/api/produtos/buscar?q=${encodeURIComponent(termo)}`);
+  const produtos = await resp.json();
+  sugestoesBox.innerHTML = produtos.map(p =>
+    `<div class="autocomplete-item" data-id="${p.id_produto}">
+       <strong>${p.nome}</strong> <span class="muted">(${p.codigo}) · saldo: ${p.saldo_atual}</span>
+     </div>`).join('');
+  sugestoesBox.querySelectorAll('.autocomplete-item').forEach((el, i) => {
+    el.addEventListener('click', () => selecionarProduto(produtos[i]));
+  });
+});
+
+function precoSugerido(p) {
+  const base = tipoMovimento === 'Entrada' ? p.preco_custo : p.preco_venda;
+  const unidadeSel = document.getElementById('unidade_original').value;
+  const fator = (unidadeSel === 'Caixa' || unidadeSel === 'Embalagem') ? p.qtd_por_unidade : 1;
+  return base * fator;
+}
+
+function selecionarProduto(p) {
+  produtoSelecionado = p;
+  buscaInput.value = `${p.nome} (${p.codigo})`;
+  document.getElementById('id_produto').value = p.id_produto;
+  sugestoesBox.innerHTML = '';
+  document.getElementById('produto-info').style.display = 'flex';
+  document.getElementById('info-saldo').textContent = p.saldo_atual;
+  document.getElementById('info-unidade').textContent = p.unidade + (p.unidade !== 'Unidade' ? ` (${p.qtd_por_unidade}/un.)` : '');
+  document.getElementById('info-preco').textContent = (tipoMovimento === 'Entrada' ? p.preco_custo : p.preco_venda).toFixed(2) + ' MZN / unidade avulsa';
+  document.getElementById('preco_unitario').value = precoSugerido(p).toFixed(2);
+  if (document.getElementById('fornecedor') && p.fornecedor) {
+    document.getElementById('fornecedor').value = p.fornecedor;
+  }
+}
+
+document.getElementById('unidade_original').addEventListener('change', function() {
+  if (produtoSelecionado) {
+    document.getElementById('preco_unitario').value = precoSugerido(produtoSelecionado).toFixed(2);
+  }
+});
+
+document.addEventListener('click', (e) => {
+  if (!sugestoesBox.contains(e.target) && e.target !== buscaInput) sugestoesBox.innerHTML = '';
+});
+
+document.getElementById('form-movimento').addEventListener('submit', function(e) {
+  if (!document.getElementById('id_produto').value) {
+    e.preventDefault();
+    alert('Selecione um produto na lista de sugestões.');
+  }
+});
+</script>
+{% endblock %}

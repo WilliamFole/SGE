@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Recuperar senha · {{ app_name }}{% endblock %}
+{% block content_noauth %}
+<div class="login-screen">
+  <div class="login-panel">
+    <div class="login-mark">◈</div>
+    <h1 class="app-title">Recuperar Senha</h1>
+    <p class="login-sub">Passo 1 · Informe o seu utilizador</p>
+
+    <form method="POST" class="login-form">
+      <label>Utilizador registado
+        <input type="text" name="login" placeholder="Digite o login" required autofocus
+               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      </label>
+      <button type="submit" class="btn btn-primary btn-block">Gerar link de recuperação</button>
+    </form>
+    <a href="{{ url_for('login') }}" class="back-to-login">← Voltar ao login</a>
+  </div>
+</div>
+{% endblock %}

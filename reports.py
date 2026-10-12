@@ -5,7 +5,11 @@ import re
 import base64
 from datetime import datetime
 from openpyxl import Workbook
+<<<<<<< HEAD
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+=======
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side, numbers
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 from openpyxl.drawing.image import Image as XLImage
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
@@ -105,12 +109,20 @@ def formatar_inteiro(valor):
 
 def gerar_pdf(titulo, colunas, linhas, subtitulo=None, empresa_titulo=None, is_cotacao=False, landscape_mode=False):
     buf = io.BytesIO()
+<<<<<<< HEAD
     if not landscape_mode and not is_cotacao:
+=======
+    # Detecta automaticamente se precisa de orientação horizontal
+    # Baseado no número de colunas ou largura do conteúdo
+    if not landscape_mode and not is_cotacao:
+        # Força horizontal para cotações e relatórios com muitas colunas (> 6)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         landscape_mode = len(colunas) > 6 or any(len(str(c)) > 30 for c in colunas)
     pagesize = landscape(A4) if landscape_mode or is_cotacao else A4
     doc = SimpleDocTemplate(buf, pagesize=pagesize,
                              topMargin=1.2*cm, bottomMargin=1.2*cm,
                              leftMargin=1.2*cm, rightMargin=1.2*cm)
+<<<<<<< HEAD
 
     styles = getSampleStyleSheet()
     # ---- Estilos ALINHADOS À ESQUERDA (canto superior esquerdo) ----
@@ -138,6 +150,31 @@ def gerar_pdf(titulo, colunas, linhas, subtitulo=None, empresa_titulo=None, is_c
             img.hAlign = "RIGHT"
         except Exception:
             img = None
+=======
+    
+    styles = getSampleStyleSheet()
+    style_titulo_empresa = ParagraphStyle(
+        "EmpresaTitulo", parent=styles["Title"],
+        fontSize=16, textColor=BRAND_COLOR, alignment=TA_CENTER, spaceAfter=2,
+    )
+    style_sub_empresa = ParagraphStyle(
+        "EmpresaSub", parent=styles["Normal"],
+        fontSize=9, textColor=colors.HexColor("#4B4B4B"),
+        alignment=TA_CENTER, spaceAfter=2,
+    )
+    elementos = []
+
+    # Logo
+    logo_caminho = _caminho_logo_empresa()
+    emp = _dados_empresa()
+    img = ""
+    if logo_caminho:
+        try:
+            img = RLImage(logo_caminho, width=3.2*cm, height=3.2*cm)
+            img.hAlign = "CENTER"
+        except Exception:
+            img = ""
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     else:
         logo_bytes = _logo_data_url_bytes()
         if logo_bytes:
@@ -145,6 +182,7 @@ def gerar_pdf(titulo, colunas, linhas, subtitulo=None, empresa_titulo=None, is_c
                 from io import BytesIO
                 b, ext = logo_bytes
                 bio = BytesIO(b)
+<<<<<<< HEAD
                 img = RLImage(bio, width=2.8*cm, height=2.8*cm)
                 img.hAlign = "RIGHT"
             except Exception:
@@ -187,6 +225,28 @@ def gerar_pdf(titulo, colunas, linhas, subtitulo=None, empresa_titulo=None, is_c
     elementos.append(Spacer(1, 0.2*cm))
 
     # ---- Título do relatório (centrado) ----
+=======
+                img = RLImage(bio, width=3.2*cm, height=3.2*cm)
+                img.hAlign = "CENTER"
+            except Exception:
+                img = ""
+
+    titulo_emp = empresa_titulo or emp.get("nome") or "SGE — Sistema de Gestão de Estoque"
+    sub = _cabecalho_empresa_texto()[1:] if len(_cabecalho_empresa_texto()) > 1 else []
+    col_esq = [img] if img else [Paragraph("◈", ParagraphStyle(
+        "Mark", fontSize=32, textColor=colors.HexColor("#E8B33D"), alignment=TA_CENTER))]
+    texto_centro = [Paragraph(titulo_emp, style_titulo_empresa)]
+    for s in sub:
+        texto_centro.append(Paragraph(s, style_sub_empresa))
+    cabecalho_tabela = Table([[col_esq[0], texto_centro]],
+                             colWidths=[4*cm, doc.width - 4.2*cm])
+    cabecalho_tabela.setStyle(TableStyle([
+        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+        ("ALIGN", (0,0), (-1,-1), "CENTER"),
+    ]))
+    elementos.append(cabecalho_tabela)
+    elementos.append(Spacer(1, 0.2*cm))
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     if emp.get("nome"):
         elementos.append(Paragraph(titulo, ParagraphStyle(
             "TituloRel", parent=styles["Heading2"], alignment=TA_CENTER,
@@ -194,6 +254,7 @@ def gerar_pdf(titulo, colunas, linhas, subtitulo=None, empresa_titulo=None, is_c
         )))
     else:
         elementos.append(Paragraph(titulo, styles["Title"]))
+<<<<<<< HEAD
 
     if subtitulo:
         elementos.append(Paragraph(subtitulo, ParagraphStyle(
@@ -212,18 +273,34 @@ def gerar_pdf(titulo, colunas, linhas, subtitulo=None, empresa_titulo=None, is_c
         "saldo inicial (qtd)", "entradas (qtd)", "saídas (qtd)",
         "saldo final (qtd)",
     }
+=======
+    if subtitulo:
+        elementos.append(Paragraph(subtitulo, styles["Normal"]))
+    elementos.append(Paragraph(
+        f"Gerado em {datetime.now().strftime('%d/%m/%Y %H:%M')}", styles["Normal"]))
+    elementos.append(Spacer(1, 0.5*cm))
+
+    # Preparar dados com formatação
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     dados_formatados = [colunas]
     for linha in linhas:
         linha_formatada = []
         for idx, val in enumerate(linha):
+<<<<<<< HEAD
             if colunas[idx].strip().lower() in COLUNAS_PRE_FORMATADAS:
                 linha_formatada.append(str(val))
+=======
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
             col_nome = colunas[idx].lower()
             num_val = None
             if isinstance(val, (int, float)):
                 num_val = float(val)
             elif isinstance(val, str):
                 texto = val.strip().replace(' ', '')
+<<<<<<< HEAD
+=======
+                # Normaliza separadores decimais
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
                 if ',' in texto and '.' in texto:
                     texto_norm = texto.replace('.', '').replace(',', '.')
                 elif ',' in texto and '.' not in texto:
@@ -235,10 +312,23 @@ def gerar_pdf(titulo, colunas, linhas, subtitulo=None, empresa_titulo=None, is_c
                         num_val = float(texto_norm)
                     except Exception:
                         num_val = None
+<<<<<<< HEAD
             if num_val is not None:
                 if any(p in col_nome for p in ("preço","preco","valor","total","lucro","custo","venda","receita")):
                     linha_formatada.append(formatar_moeda_br(num_val))
                 elif any(p in col_nome for p in ("qtd","quantidade","saldo","estoque","unid","numero","número","unidade","minimo","maximo")):
+=======
+                else:
+                    num_val = None
+            else:
+                num_val = None
+
+            if num_val is not None:
+                col_nome_lower = col_nome.lower()
+                if any(p in col_nome_lower for p in ("preço", "preco", "valor", "total", "lucro", "custo", "venda", "receita")):
+                    linha_formatada.append(formatar_moeda_br(num_val))
+                elif any(p in col_nome_lower for p in ("qtd", "quantidade", "saldo", "estoque", "unid", "numero", "número", "unidade", "minimo", "maximo")):
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
                     linha_formatada.append(formatar_inteiro(num_val))
                 else:
                     if abs(num_val - round(num_val)) < 1e-9:
@@ -257,16 +347,29 @@ def gerar_pdf(titulo, colunas, linhas, subtitulo=None, empresa_titulo=None, is_c
         ("FONTNAME", (0,0), (-1,-1), "Times-Roman"),
         ("FONTNAME", (0,0), (-1,0), "Times-Bold"),
         ("GRID", (0,0), (-1,-1), 0.4, colors.grey),
+<<<<<<< HEAD
         ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.white, colors.HexColor("#F2F2F2")]),
         ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
         ("ALIGN", (0,0), (-1,-1), "LEFT"),
         ("ALIGN", (1,1), (-1,-1), "RIGHT"),
     ])) 
+=======
+        ("ROWBACKGROUNDS", (0,1), (-1,-1),
+         [colors.white, colors.HexColor("#F2F2F2")]),
+        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+        ("ALIGN", (0,0), (-1,-1), "LEFT"),
+        ("ALIGN", (1,1), (-1,-1), "RIGHT"),  # números alinhados à direita
+    ]))
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     elementos.append(tabela)
     doc.build(elementos)
     buf.seek(0)
     return buf
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 def gerar_excel(titulo, colunas, linhas, empresa_titulo=None):
     wb = Workbook()
     ws = wb.active
@@ -276,6 +379,10 @@ def gerar_excel(titulo, colunas, linhas, empresa_titulo=None):
     nome_emp = empresa_titulo or emp.get("nome") or "SGE — Sistema de Gestão de Estoque"
     linha_atual = 1
 
+<<<<<<< HEAD
+=======
+    # Logo
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     logo_info = _logo_data_url_bytes()
     if logo_info:
         try:
@@ -350,8 +457,14 @@ def gerar_excel(titulo, colunas, linhas, empresa_titulo=None):
             c.font = default_font
             if idx % 2 == 0:
                 c.fill = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid")
+<<<<<<< HEAD
             col_nome = colunas[j-1].lower()
             if any(p in col_nome for p in ("preço", "preco", "valor", "total", "lucro", "custo", "venda", "receita")):
+=======
+            # Formatação condicional
+            col_nome = colunas[j-1].lower()
+            if any(p in col_nome for p in ("preço", "preco", "valor", "total", "lucro", "custo", "venda")):
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
                 if isinstance(val, (int, float)):
                     c.number_format = '#,##0.00'
                     c.alignment = Alignment(horizontal="right")
@@ -371,6 +484,10 @@ def gerar_excel(titulo, colunas, linhas, empresa_titulo=None):
     return buf
 
 
+<<<<<<< HEAD
+=======
+# Função específica para relatório de preços
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 def gerar_relatorio_precos(conn):
     produtos = conn.execute(
         """SELECT p.codigo, p.nome, c.nome AS categoria, p.preco_venda
@@ -384,6 +501,7 @@ def gerar_relatorio_precos(conn):
     return colunas, linhas
 
 
+<<<<<<< HEAD
 def gerar_pdf_cotacao(cotacao, itens, empresa_titulo=None):
     """Cotação em A4 retrato, layout tipo fatura."""
     from reportlab.platypus import HRFlowable
@@ -981,3 +1099,26 @@ def gerar_pdf_fatura(conta, itens=None):
     doc.build(elementos, onFirstPage=_on_page, onLaterPages=_on_page)
     buf.seek(0)
     return buf
+=======
+# Função para gerar PDF de cotação
+def gerar_pdf_cotacao(cotacao, itens, empresa_titulo=None):
+    # Similar ao gerar_pdf, mas com dados específicos da cotação
+    colunas = ["Código", "Produto", "Quantidade", "Preço Unit.", "Desc. %", "Subtotal"]
+    linhas = []
+    for item in itens:
+        linhas.append([
+            item["codigo"],
+            item["produto_nome"],
+            int(item["quantidade"]),
+            arredondar_moeda(item["preco_unitario"]),
+            f"{item['desconto_percentual']:.0f}%",
+            arredondar_moeda(item["valor_total"])
+        ])
+    # Adicionar totais e informações do cliente
+    subtitulo = (f"Cliente: {cotacao['nome_cliente']} | "
+                 f"Validade: {cotacao['data_validade']} | "
+                 f"Total: {formatar_moeda_br(cotacao['valor_total'])}")
+    return gerar_pdf(f"Cotação {cotacao['numero']}", colunas, linhas,
+                     subtitulo=subtitulo, empresa_titulo=empresa_titulo,
+                     landscape_mode=True)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9

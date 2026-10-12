@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block page_title %}Configurações{% endblock %}
+{% block title %}Configurações · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Configurações do Sistema</h1>
+    <p class="page-sub">Parâmetros gerais do negócio, dados da empresa e segurança</p>
+  </div>
+</div>
+
+<div class="panel form-panel">
+  <form method="POST" enctype="multipart/form-data" class="config-sections">
+
+    <!-- Cartão 1: Dados da Empresa -->
+    <div class="config-card">
+      <div class="config-card-header">
+        <div class="card-icon">🏢</div>
+        <h3>Dados da Empresa</h3>
+      </div>
+      <div class="config-card-body">
+        <div class="grid-form">
+          <label class="span-2">Nome da empresa *
+            <input type="text" name="nome_empresa" required value="{{ config.nome_empresa }}"
+                   placeholder="Nome da sua empresa">
+            <span class="hint">Aparecerá em todos os relatórios, PDF, Excel e no painel após primeira configuração.</span>
+          </label>
+          <label class="span-2">Morada / Endereço
+            <input type="text" name="morada_empresa" value="{{ config.morada_empresa }}"
+                   placeholder="Rua, número, bairro, cidade">
+          </label>
+          <label>NUIT (Nº de Identificação Fiscal)
+            <input type="text" name="nuit_empresa" maxlength="20" value="{{ config.nuit_empresa }}"
+                   placeholder="Ex.: 123456789">
+          </label>
+          <label>Contacto telefónico
+            <input type="text" name="contacto_empresa" maxlength="30" value="{{ config.contacto_empresa }}"
+                   placeholder="Ex.: +258 84 000 0000">
+          </label>
+          <label class="span-2">Email da empresa
+            <input type="email" name="email_empresa" value="{{ config.email_empresa }}"
+                   placeholder="geral@empresa.co.mz">
+          </label>
+          <label class="span-2">Logo da empresa
+            <div class="logo-preview-box">
+              {% if logo_url %}
+                <img src="{{ logo_url }}" alt="Logo" class="logo-preview-img">
+              {% else %}
+                <div class="logo-placeholder">Sem logo<br>(PNG/JPG/GIF, máx. 4MB)</div>
+              {% endif %}
+              <div class="logo-actions">
+                <input type="file" name="logo_file" accept="image/png,image/jpeg,image/gif,image/bmp,image/webp">
+                {% if logo_url %}
+                <label class="checkbox-label" style="margin-top:8px">
+                  <input type="checkbox" name="remover_logo" value="1">
+                  Remover logótipo actual
+                </label>
+                {% endif %}
+                <span class="hint">
+                  Recomendado: PNG transparente, tamanho quadrado. A imagem será usada no cabeçalho de todos os relatórios impressos.
+                </span>
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cartão 2: Parâmetros do Negócio -->
+    <div class="config-card">
+      <div class="config-card-header">
+        <div class="card-icon">📦</div>
+        <h3>Parâmetros do Negócio</h3>
+      </div>
+      <div class="config-card-body">
+        <div class="grid-form">
+          <label>Moeda padrão
+            <input type="text" name="moeda" value="{{ config.moeda }}">
+          </label>
+          <label>Método de custeio
+            <select name="metodo_custeio">
+              <option value="media_ponderada" {{ 'selected' if config.metodo_custeio=='media_ponderada' }}>Média Ponderada Móvel</option>
+              <option value="ultimo_preco" {{ 'selected' if config.metodo_custeio=='ultimo_preco' }}>Último Preço</option>
+            </select>
+          </label>
+          <label>Dias de antecedência p/ alerta de validade
+            <input type="number" min="1" name="dias_alerta_validade" value="{{ config.dias_alerta_validade }}">
+          </label>
+          <label>Margem de lucro desejada (%)
+            <input type="number" min="0" step="0.1" name="margem_lucro_desejada" value="{{ config.margem_lucro_desejada }}">
+          </label>
+          <label>Estoque mínimo padrão
+            <input type="number" step="0.00001" min="0" name="estoque_minimo_padrao" value="{{ config.estoque_minimo_padrao }}">
+          </label>
+          <label>Máx. tentativas de login
+            <input type="number" min="1" max="50" name="max_tentativas_login" value="{{ config.max_tentativas_login }}">
+          </label>
+          <label class="span-2">Tempo de bloqueio (minutos) após tentativas excedidas
+            <input type="number" min="1" max="120" name="tempo_bloqueio_login_min" value="{{ config.tempo_bloqueio_login_min }}">
+            <span class="hint">Após exceder o número de tentativas, o utilizador terá que aguardar este tempo.</span>
+          </label>
+          <label class="checkbox-label span-2">
+            <input type="checkbox" name="permitir_estoque_negativo" {{ 'checked' if config.permitir_estoque_negativo=='1' }}>
+            Permitir vendas por encomenda (estoque negativo temporário)
+          </label>
+          <label class="checkbox-label span-2">
+            <input type="checkbox" name="backup_automatico" {{ 'checked' if config.backup_automatico=='1' }}>
+            Habilitar backup automático periódico do banco de dados
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cartão 3: Segurança -->
+    <div class="config-card">
+      <div class="config-card-header">
+        <div class="card-icon">🔒</div>
+        <h3>Segurança — Código de Alteração de Produto</h3>
+      </div>
+      <div class="config-card-body">
+        <p class="hint-security" style="margin-bottom:16px">
+          <strong>Protecção adicional:</strong> este código será exigido SEMPRE que um produto cadastrado seja editado
+          (actualização de preços, quantidades por embalagem, etc.). Fornecido uma vez ao Administrador e poderá
+          ser renovado nesta tela a qualquer momento.
+        </p>
+        <div class="grid-form">
+          <label class="span-2">Código de segurança p/ actualização de produtos
+            <input type="password" name="codigo_alteracao_produto"
+                   autocomplete="new-password"
+                   placeholder="{{ '•••••••• (definido)' if config.codigo_alteracao_produto else 'Digite um código forte' }}">
+            <span class="hint">Deixe em branco para manter o código actual. Para o desativar, marque a opção abaixo.</span>
+          </label>
+          {% if config.codigo_alteracao_produto %}
+          <label class="checkbox-label span-2">
+            <input type="checkbox" name="limpar_codigo_alteracao" value="1">
+            <span class="text-danger">Desactivar / limpar o código de segurança actualmente definido</span>
+          </label>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions" style="padding: 0 6px 6px;">
+      <button type="submit" class="btn btn-primary">💾 Guardar Todas as Configurações</button>
+    </div>
+  </form>
+</div>
+
+<!-- Cartão separado: Backup -->
+<div class="config-card">
+  <div class="config-card-header">
+    <div class="card-icon">💾</div>
+    <h3>Backup e Restauração</h3>
+  </div>
+  <div class="config-card-body">
+    <div class="form-actions" style="flex-wrap:wrap">
+      <a href="{{ url_for('configuracoes_backup') }}" class="btn btn-secondary">⬇ Baixar backup actual</a>
+      <form method="POST" action="{{ url_for('configuracoes_restaurar') }}" enctype="multipart/form-data" class="inline-form"
+            onsubmit="return confirm('⚠️ A restauração irá substituir TODOS os dados actuais. Deseja continuar?');">
+        <input type="file" name="arquivo_backup" accept=".db,.sqlite,.sqlite3" required>
+        <button type="submit" class="btn btn-ghost">↺ Restaurar backup</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block page_title %}Preços de Venda{% endblock %}
+{% block title %}Preços de Venda · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Preços de Venda</h1>
+    <p class="page-sub">Lista de todos os produtos ativos com seus preços de venda</p>
+  </div>
+  <div class="header-actions no-print">
+    <a href="{{ url_for('relatorio_precos', exportar='pdf') }}" class="btn btn-secondary">⬇ Exportar PDF</a>
+    <a href="{{ url_for('relatorio_precos', exportar='excel') }}" class="btn btn-secondary">⬇ Exportar Excel</a>
+  </div>
+</div>
+
+<div class="panel">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Produto</th>
+        <th>Categoria</th>
+        <th class="num-right">Preço de Venda (MZN)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for linha in linhas %}
+      <tr>
+        <td class="mono">{{ linha[0] }}</td>
+        <td>{{ linha[1] }}</td>
+        <td>{{ linha[2] }}</td>
+        <td class="num-right">{{ "%.2f"|format(linha[3]|float) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="empty-hint">Nenhum produto cadastrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

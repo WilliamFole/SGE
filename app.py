@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+<<<<<<< HEAD
 """Aplicação principal (app.py) — pontos de entrada e rotas Flask."""
  
 import atexit
@@ -7,6 +8,23 @@ import logging
 import math
 import os
 import secrets
+=======
+"""Aplicação principal (app.py) — pontos de entrada e rotas Flask.
+
+Este ficheiro contém a instância Flask, os decorators de autenticação,
+as rotas que expõem a interface web (dashboard, produtos, categorias,
+movimentos, relatórios, cotações, inventário, utilizadores, configurações)
+e integrações com os módulos de serviços, relatório e persistência.
+
+Siga a documentação em /docs para instruções de instalação, empacotamento
+e desenvolvimento.
+"""
+
+import atexit
+import base64
+import math
+import os
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 import shutil
 import signal
 import sqlite3
@@ -32,6 +50,7 @@ import reports as reportmod
 APP_PORT = 5701
 APP_NAME = "SGE"
 
+<<<<<<< HEAD
 def _get_or_create_secret_key():
     """Gera uma chave de sessão na primeira execução e reutiliza nas seguintes."""
     key_path = os.path.join(get_base_dir(), ".secret_key")
@@ -79,6 +98,13 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
 )
 
+=======
+app = Flask(__name__)
+app.secret_key = "sge-estoque-chave-local-troque-se-desejar-" + str(int(time.time()))
+app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
+
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
 def safe_parse_float(value, default=0.0):
     """Converte string para float de forma segura, aceitando vírgula como decimal"""
@@ -86,9 +112,18 @@ def safe_parse_float(value, default=0.0):
         return default
     try:
         v_str = str(value).strip()
+<<<<<<< HEAD
         if ',' in v_str and '.' in v_str:
             v_str = v_str.replace('.', '').replace(',', '.')
         elif ',' in v_str and '.' not in v_str:
+=======
+        # Se tiver vírgula como separador decimal
+        if ',' in v_str and '.' in v_str:
+            # Formato: 1.234,56
+            v_str = v_str.replace('.', '').replace(',', '.')
+        elif ',' in v_str and '.' not in v_str:
+            # Formato: 1,23
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
             v_str = v_str.replace(',', '.')
         return float(v_str)
     except (TypeError, ValueError):
@@ -98,6 +133,7 @@ def safe_parse_float(value, default=0.0):
 @app.errorhandler(Exception)
 def handle_exception(e):
     traceback.print_exc()
+<<<<<<< HEAD
     logging.error(traceback.format_exc())
     return (
         "<h1>Ocorreu um erro interno</h1>"
@@ -105,6 +141,9 @@ def handle_exception(e):
         "técnico se o problema persistir.</p>"
         f'<p><a href="{url_for("dashboard")}">Voltar ao início</a></p>'
     ), 500
+=======
+    return f"<h1>Internal Server Error</h1><pre>{traceback.format_exc()}</pre>", 500
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
 _shutdown_requested = False
 
@@ -113,16 +152,21 @@ _shutdown_requested = False
 # Encerramento limpo (garante que todos os processos terminem ao sair)
 # ---------------------------------------------------------------------------
 def _encerrar_tudo():
+<<<<<<< HEAD
     """Callback de encerramento: fecha conexões pendentes e força saída.
 
     No Windows (empacotado com PyInstaller) usamos os._exit(0) porque
     os.kill(pid, SIGTERM) não funciona de forma fiável nesse SO.
     """
+=======
+    """Callback de encerramento: fecha conexões pendentes e força saída."""
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     global _shutdown_requested
     if _shutdown_requested:
         return
     _shutdown_requested = True
     try:
+<<<<<<< HEAD
         logging.shutdown()
     except Exception:
         pass
@@ -138,6 +182,12 @@ def _encerrar_tudo():
             os._exit(0)
         except Exception:
             pass
+=======
+        if getattr(sys, "frozen", False):
+            os.kill(os.getpid(), getattr(signal, "SIGTERM", 15))
+    except Exception:
+        pass
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
 
 atexit.register(_encerrar_tudo)
@@ -196,6 +246,7 @@ def inject_globals():
         "config": {"moeda": get_config("moeda", "MZN")},
         "ano_atual": datetime.now().year,
         "app_name": APP_NAME,
+<<<<<<< HEAD
         "hoje": datetime.now().date().isoformat(),
     }
 
@@ -251,6 +302,44 @@ def format_qtd(value, unidade=None):
         return _formatar_numero_pt(round(float(value or 0)), 0)
     except (TypeError, ValueError):
         return "0"
+=======
+    }
+
+
+@app.template_filter("format_num")
+def format_num(value, decimals=2):
+    try:
+        return f"{float(value):,.{int(decimals)}f}"
+    except Exception:
+        return f"{0:,.{int(decimals)}f}"
+
+@app.template_filter("format_int")
+def format_int(value):
+    """Formata números como inteiros com separador de milhar (ex: 1.000)"""
+    try:
+        val = int(float(value))
+        return f"{val:,}".replace(',', '.')
+    except (TypeError, ValueError):
+        return "0"
+
+@app.template_filter("format_currency")
+def format_currency(value, decimals=2):
+    """Formata valores monetários com separador de milhar e vírgula decimal (ex: 1.000,00)"""
+    try:
+        val = float(value)
+        # Formata com separador de milhar (,) e ponto decimal (.)
+        formatted = f"{val:,.{int(decimals)}f}"
+        # Troca: . (separador milhar) -> . (mantém), , (decimal) -> , (mantém)
+        # Na verdade, o Python usa , para milhar e . para decimal
+        # Para português: . para milhar e , para decimal
+        parts = formatted.split('.')
+        integer_part = parts[0].replace(',', '.')
+        decimal_part = parts[1] if len(parts) > 1 else '0' * decimals
+        return f"{integer_part},{decimal_part}"
+    except (TypeError, ValueError):
+        zeros = '0' * decimals
+        return f"0,{zeros}"
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
 
 # ---------------------------------------------------------------------------
@@ -258,6 +347,10 @@ def format_qtd(value, unidade=None):
 # ---------------------------------------------------------------------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
+<<<<<<< HEAD
+=======
+    # Autocomplete OFF → não guardar último utilizador
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     if request.method == "POST":
         login_val = request.form.get("login", "").strip()
         senha = request.form.get("senha", "")
@@ -315,7 +408,11 @@ def login():
 
 @app.route("/recuperar-senha", methods=["GET", "POST"])
 def recuperar_senha_inicio():
+<<<<<<< HEAD
     """Passo 1: pede o login e gera token."""
+=======
+    """Passo 1: pede o login e gera token (exibe na tela, pq é desktop/offline)."""
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     if request.method == "POST":
         login_val = request.form.get("login", "").strip()
         conn = get_conn()
@@ -331,7 +428,11 @@ def recuperar_senha_inicio():
 
 @app.route("/recuperar-senha/t/<token>", methods=["GET", "POST"])
 def recuperar_senha_token(token):
+<<<<<<< HEAD
     """Passo 2: valida o token e permite definir nova senha."""
+=======
+    """Passo 2: valida o token e permite definir nova senha (com confirmação)."""
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     conn = get_conn()
     user = services.validar_token_recuperacao(conn, token)
     if not user:
@@ -376,6 +477,7 @@ def logout():
 
 
 @app.route("/api/shutdown", methods=["POST"])
+<<<<<<< HEAD
 @perfil_required("Admin", "Gerente")
 def shutdown_app():
     """Endpoint chamado pelo botão 'Sair e encerrar'.
@@ -396,6 +498,12 @@ def shutdown_app():
 
     # Fallback (modo browser)
     t = threading.Timer(1.5, _encerrar_tudo)
+=======
+@login_required
+def shutdown_app():
+    """Endpoint chamado pelo botão 'Sair e encerrar' (Admin/Gerente)."""
+    t = threading.Timer(0.6, _encerrar_tudo)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     t.daemon = True
     t.start()
     return jsonify({"ok": True})
@@ -582,7 +690,12 @@ def categorias_excluir(id_categoria):
 
 
 # ---------------------------------------------------------------------------
+<<<<<<< HEAD
 # Produtos
+=======
+# Produtos (atualizado: código automático, sem duplicados, 5 decimais,
+#             código de segurança para editar, auditoria, reflete estoque)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 # ---------------------------------------------------------------------------
 @app.route("/produtos")
 @login_required
@@ -648,7 +761,11 @@ def api_codigo_provisorio():
 @perfil_required("Admin", "Gerente")
 def produtos_editar(id_produto):
     conn = get_conn()
+<<<<<<< HEAD
     produto = conn.execute("SELECT * FROM produtos WHERE id_produto=? AND ativo=1", (id_produto,)).fetchone()
+=======
+    produto = conn.execute("SELECT * FROM produtos WHERE id_produto=?", (id_produto,)).fetchone()
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     categorias = conn.execute("SELECT * FROM categorias WHERE ativo=1 ORDER BY nome").fetchall()
     conn.close()
     if not produto:
@@ -670,6 +787,10 @@ def produtos_salvar():
 
         # Segurança: para EDITAR, exige código se Admin tiver definido um
         if modo == "editar":
+<<<<<<< HEAD
+=======
+            # Verifica se o código de segurança é exigido
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
             codigo_seg_config = get_config("codigo_alteracao_produto", "")
             if codigo_seg_config:
                 codigo_seg_forn = f.get("codigo_seguranca", "")
@@ -692,6 +813,7 @@ def produtos_salvar():
             conn.close()
             return redirect(url_for("produtos_list"))
 
+<<<<<<< HEAD
         # Categoria — tratamento robusto
         id_cat_raw = f.get("id_categoria", "").strip()
         if not id_cat_raw:
@@ -705,6 +827,8 @@ def produtos_salvar():
             conn.close()
             return redirect(url_for("produtos_list"))
 
+=======
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         # Código
         if modo == "novo":
             codigo = (f.get("codigo", "") or "").strip()
@@ -737,6 +861,7 @@ def produtos_salvar():
         if unidade_val == "Unidade":
             qtd_por_unidade_raw = 1
 
+<<<<<<< HEAD
         # Calcula estoque_maximo ANTES de montar o dict
         # (não é possível ter instruções dentro de dict(...))
         em_raw = (f.get("estoque_maximo") or "").strip()
@@ -751,12 +876,21 @@ def produtos_salvar():
         dados = dict(
             codigo=codigo, nome=nome,
             id_categoria=id_categoria,
+=======
+        dados = dict(
+            codigo=codigo, nome=nome,
+            id_categoria=f.get("id_categoria", type=int) or f.get("id_categoria"),
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
             unidade=unidade_val,
             qtd_por_unidade=qtd_por_unidade_raw,
             preco_custo=parse_ceil(f.get("preco_custo")),
             preco_venda=parse_ceil(f.get("preco_venda")),
             estoque_minimo=int(float(f.get("estoque_minimo") or 0)),
+<<<<<<< HEAD
             estoque_maximo=estoque_maximo,
+=======
+            estoque_maximo=(int(float(f.get("estoque_maximo"))) if f.get("estoque_maximo") else None),
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
             validade=f.get("validade") or None,
             fornecedor=f.get("fornecedor", "").strip(),
             observacoes=f.get("observacoes", "").strip(),
@@ -764,6 +898,7 @@ def produtos_salvar():
 
         antigos = None
         if modo == "editar":
+<<<<<<< HEAD
             row = conn.execute(
                 "SELECT * FROM produtos WHERE id_produto=?", (id_produto,)
             ).fetchone()
@@ -772,6 +907,11 @@ def produtos_salvar():
                 conn.close()
                 return redirect(url_for("produtos_list"))
             antigos = dict(row)
+=======
+            antigos = dict(conn.execute(
+                "SELECT * FROM produtos WHERE id_produto=?", (id_produto,)
+            ).fetchone())
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
             conn.execute(
                 """UPDATE produtos SET codigo=?, nome=?, id_categoria=?, unidade=?, qtd_por_unidade=?,
                    preco_custo=?, preco_venda=?, estoque_minimo=?, estoque_maximo=?, validade=?,
@@ -828,6 +968,7 @@ def produtos_cancelar():
 @app.route("/produtos/<int:id_produto>/excluir", methods=["POST"])
 @perfil_required("Admin")
 def produtos_excluir(id_produto):
+<<<<<<< HEAD
     """Exclui o produto e TODOS os dados relacionados (cascata)."""
     conn = get_conn()
     try:
@@ -884,6 +1025,31 @@ def produtos_excluir(id_produto):
     conn.close()
     return redirect(url_for("produtos_list"))
 
+=======
+    conn = get_conn()
+    antigos = conn.execute(
+        "SELECT * FROM produtos WHERE id_produto=?", (id_produto,)
+    ).fetchone()
+    tem_mov = conn.execute("SELECT COUNT(*) c FROM movimentos WHERE id_produto=?",
+                           (id_produto,)).fetchone()["c"]
+    if tem_mov:
+        conn.execute("UPDATE produtos SET ativo=0 WHERE id_produto=?", (id_produto,))
+        flash("Produto possui movimentações: foi desativado (exclusão lógica).", "info")
+    else:
+        conn.execute("DELETE FROM estoque WHERE id_produto=?", (id_produto,))
+        conn.execute("DELETE FROM produtos WHERE id_produto=?", (id_produto,))
+        flash("Produto excluído.", "sucesso")
+    registrar_auditoria(conn, session.get("user_id"), "produtos",
+                        id_produto, "DELETE",
+                        dict(antigos) if antigos else None,
+                        {"ativo": 0 if tem_mov else None},
+                        _client_ip())
+    conn.commit()
+    conn.close()
+    return redirect(url_for("produtos_list"))
+
+
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 @app.route("/api/produtos/buscar")
 @login_required
 def api_produtos_buscar():
@@ -901,13 +1067,21 @@ def api_produtos_buscar():
 
 
 # ---------------------------------------------------------------------------
+<<<<<<< HEAD
 # Inventário físico
+=======
+# Inventário físico (atualizado)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 # ---------------------------------------------------------------------------
 @app.route("/estoque/inventario", methods=["GET", "POST"])
 @login_required
 def estoque_inventario():
     conn = get_conn()
     if request.method == "POST":
+<<<<<<< HEAD
+=======
+        acao = request.form.get("acao_apos", "guardar")
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         exportar = request.form.get("exportar_pdf", "0") == "1"
 
         inventarios_inseridos = []
@@ -920,6 +1094,10 @@ def estoque_inventario():
                 contagem = float(value or 0)
             except ValueError:
                 continue
+<<<<<<< HEAD
+=======
+            # enforce integer counts for Unidade products
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
             prod = conn.execute("SELECT nome, unidade FROM produtos WHERE id_produto=?", (id_produto,)).fetchone()
             if prod and prod["unidade"] == "Unidade" and not float(contagem).is_integer():
                 invalid_entries.append(prod["nome"] if prod and prod["nome"] else str(id_produto))
@@ -931,6 +1109,10 @@ def estoque_inventario():
             saldo_registrado = saldo_registrado["saldo"] if saldo_registrado else 0
             diferenca = services.round5(contagem - saldo_registrado)
 
+<<<<<<< HEAD
+=======
+            # Se já tem inventário exportado, marca como "alterado após export"
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
             anterior = conn.execute(
                 "SELECT MAX(id_inventario) AS ult FROM inventarios WHERE id_produto=? AND exportado=1",
                 (id_produto,),
@@ -953,6 +1135,7 @@ def estoque_inventario():
             inventarios_inseridos.append(cur.lastrowid)
         conn.commit()
 
+<<<<<<< HEAD
                 # Feedback ao utilizador
         if invalid_entries:
             flash("As seguintes contagens foram ignoradas (produtos 'Unidade' "
@@ -960,6 +1143,10 @@ def estoque_inventario():
 
         # Exportação PDF (bloco independente de invalid_entries)
         if exportar and inventarios_inseridos:
+=======
+        if exportar and inventarios_inseridos:
+            # Auto-exporta PDF após a comparação
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
             linhas_inventario = conn.execute(
                 """SELECT p.codigo, p.nome, i.saldo_registrado, i.contagem_fisica, i.diferenca, i.valor_anterior
                    FROM inventarios i JOIN produtos p ON p.id_produto=i.id_produto
@@ -971,6 +1158,7 @@ def estoque_inventario():
             colunas = ["Código", "Produto", "Saldo Regist.", "Contagem Fís.", "Diferença", "Alterado"]
             linhas = []
             for r in linhas_inventario:
+<<<<<<< HEAD
                 dif = int(r["diferenca"] or 0)
                 alt = ""
                 if r["valor_anterior"] is not None:
@@ -982,6 +1170,17 @@ def estoque_inventario():
                     int(r["contagem_fisica"] or 0),
                     dif,
                     alt,
+=======
+                dif = r["diferenca"]
+                alt = ""
+                if r["valor_anterior"] is not None:
+                    delta = services.round5(r["contagem_fisica"] - r["valor_anterior"])
+                    alt = f"(antes: {r['valor_anterior']} → Δ {delta:+})"
+                linhas.append([
+                    r["codigo"], r["nome"],
+                    f"{r['saldo_registrado']:.5f}", f"{r['contagem_fisica']:.5f}",
+                    f"{dif:+.5f}", alt,
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
                 ])
             sub = f"Total de {len(linhas)} produtos contados em {datetime.now().strftime('%d/%m/%Y %H:%M')}"
             buf = reportmod.gerar_pdf("Relatório de Inventário Físico", colunas, linhas, subtitulo=sub)
@@ -990,11 +1189,20 @@ def estoque_inventario():
             resp.headers["Content-Disposition"] = (
                 f"attachment; filename=inventario_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf")
             return resp
+<<<<<<< HEAD
 
         if not invalid_entries:
             flash("Contagem de inventário registrada com sucesso.", "sucesso")
         conn.close()
         return redirect(url_for("estoque_inventario"))
+=======
+        flash("Contagem de inventário registrada com sucesso.", "sucesso")
+        conn.close()
+        return redirect(url_for("estoque_inventario"))
+
+    # GET: a tela já envia os saldos, mas na VIEW eles ficam mascarados (via CSS + JS)
+    # até o utilizador terminar a contagem (ao submeter).
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     produtos_rows = conn.execute(
         """SELECT p.id_produto, p.codigo, p.nome, p.unidade, p.qtd_por_unidade,
                   COALESCE(e.saldo_atual,0) AS saldo_atual
@@ -1006,6 +1214,10 @@ def estoque_inventario():
     pos_export = set()
     for p in produtos_rows:
         pd = dict(p)
+<<<<<<< HEAD
+=======
+        # latest exported inventario -> valor_anterior
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         ult = conn.execute(
             "SELECT valor_anterior FROM inventarios WHERE id_produto=? AND exportado=1 ORDER BY id_inventario DESC LIMIT 1",
             (pd["id_produto"],),
@@ -1024,7 +1236,11 @@ def estoque_inventario():
 
 
 # ---------------------------------------------------------------------------
+<<<<<<< HEAD
 # Movimentações
+=======
+# Movimentações (Entrada e Saída)  + exportações
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 # ---------------------------------------------------------------------------
 @app.route("/movimentos")
 @login_required
@@ -1047,9 +1263,15 @@ def movimentos_list():
     if categoria_id:
         sql += " AND p.id_categoria=?"; params.append(categoria_id)
     if data_ini:
+<<<<<<< HEAD
         sql += " AND m.data_hora >= ?"; params.append(data_ini + "T00:00:00")
     if data_fim:
         sql += " AND m.data_hora <= ?"; params.append(data_fim + "T23:59:59")
+=======
+        sql += " AND m.data_hora >= ?"; params.append(data_ini + " 00:00:00")
+    if data_fim:
+        sql += " AND m.data_hora <= ?"; params.append(data_fim + " 23:59:59")
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     sql += " ORDER BY m.data_hora DESC LIMIT 500"
     movimentos = conn.execute(sql, params).fetchall()
     categorias = conn.execute("SELECT * FROM categorias WHERE ativo=1 ORDER BY nome").fetchall()
@@ -1095,11 +1317,20 @@ def movimentos_exportar(formato):
     """Atalho de exportação (compatibilidade)."""
     if formato not in ("pdf", "excel"):
         abort(404)
+<<<<<<< HEAD
     args = dict(request.args)
     args["exportar"] = formato
     return redirect(url_for("movimentos_list", **args))
 
 datetime.now()
+=======
+    from flask import request as req2
+    args = dict(req2.args)
+    args["exportar"] = formato
+    return movimentos_list()
+
+
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 @app.route("/movimentos/entrada", methods=["GET", "POST"])
 @perfil_required("Admin", "Gerente", "Operador")
 def movimento_entrada():
@@ -1113,12 +1344,19 @@ def movimento_entrada():
         try:
             quantidade_val = float(request.form["quantidade"])
             unidade_val = request.form["unidade_original"]
+<<<<<<< HEAD
+=======
+            # Enforce integer quantities for Unidade
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
             if unidade_val == "Unidade" and not float(quantidade_val).is_integer():
                 flash("Quantidade inválida: produtos com unidade 'Unidade' devem ser números inteiros.", "erro")
                 conn.close()
                 return redirect(url_for("movimento_entrada"))
+<<<<<<< HEAD
             data_str = request.form.get("data_entrada") or ""
             data_hora = (data_str + "T" + datetime.now().strftime("%H:%M:%S")) if data_str else None
+=======
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
             services.registrar_entrada(
                 conn,
                 id_produto=id_produto,
@@ -1129,7 +1367,10 @@ def movimento_entrada():
                 nota_fiscal=request.form.get("nota_fiscal") or None,
                 fornecedor=request.form.get("fornecedor") or None,
                 observacoes=request.form.get("observacoes") or None,
+<<<<<<< HEAD
                 data_hora=data_hora,
+=======
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
                 ip_address=_client_ip(),
             )
             flash("Entrada registrada com sucesso.", "sucesso")
@@ -1149,6 +1390,7 @@ def movimento_entrada():
 def movimento_saida():
     conn = get_conn()
     if request.method == "POST":
+<<<<<<< HEAD
         # Campos gerais da venda
         cliente = request.form.get("cliente") or None
         forma_pagamento = request.form.get("forma_pagamento") or None
@@ -1228,12 +1470,53 @@ def movimento_saida():
         conn.close()
         return redirect(url_for("movimento_saida"))
 
+=======
+        id_produto = request.form.get("id_produto", type=int)
+        if not id_produto or not services.validar_produto_cadastrado(conn, id_produto):
+            flash("Selecione um produto cadastrado e ativo antes de registrar a saída.", "erro")
+            conn.close()
+            return redirect(url_for("movimento_saida"))
+        try:
+            quantidade_val = float(request.form["quantidade"])
+            unidade_val = request.form["unidade_original"]
+            if unidade_val == "Unidade" and not float(quantidade_val).is_integer():
+                flash("Quantidade inválida: produtos com unidade 'Unidade' devem ser números inteiros.", "erro")
+                conn.close()
+                return redirect(url_for("movimento_saida"))
+            resultado = services.registrar_saida(
+                conn,
+                id_produto=id_produto,
+                quantidade_original=quantidade_val,
+                unidade_original=unidade_val,
+                preco_unitario=float(request.form["preco_unitario"]),
+                id_usuario=session["user_id"],
+                cliente=request.form.get("cliente") or None,
+                forma_pagamento=request.form.get("forma_pagamento") or None,
+                observacoes=request.form.get("observacoes") or None,
+                ip_address=_client_ip(),
+            )
+            flash("Saída registrada com sucesso.", "sucesso")
+            if resultado["alerta_minimo"]:
+                flash("Atenção: o estoque deste produto ficou abaixo do mínimo!", "aviso")
+            conn.close()
+            return redirect(url_for("movimento_saida"))
+        except services.RegraNegocioError as e:
+            flash(str(e), "erro")
+        except Exception as e:
+            flash(f"Erro ao registrar saída: {e}", "erro")
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     produtos = conn.execute("SELECT * FROM produtos WHERE ativo=1 ORDER BY nome").fetchall()
     conn.close()
     return render_template("movimento_form.html", tipo="Saida", produtos=produtos)
 
+<<<<<<< HEAD
 # ---------------------------------------------------------------------------
 # Estoque atual
+=======
+
+# ---------------------------------------------------------------------------
+# Estoque atual (com exportação PDF/Excel)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 # ---------------------------------------------------------------------------
 @app.route("/estoque")
 @login_required
@@ -1269,6 +1552,7 @@ def estoque_list():
         sit_label = {"abaixo_minimo": "Abaixo do mínimo",
                      "acima_maximo": "Acima do máximo", "normal": "Normal"}
         for p in linhas_processadas:
+<<<<<<< HEAD
             val_c = float(p["saldo_atual"] or 0) * float(p["preco_custo"] or 0)
             val_v = float(p["saldo_atual"] or 0) * float(p["preco_venda"] or 0)
             linhas.append([
@@ -1280,6 +1564,17 @@ def estoque_list():
                 float(p["preco_venda"] or 0),
                 val_c,
                 val_v,
+=======
+            val_c = services.round5(p["saldo_atual"] * p["preco_custo"])
+            val_v = services.round5(p["saldo_atual"] * p["preco_venda"])
+            linhas.append([
+                p["codigo"], p["nome"], p["categoria_nome"] or "—", p["unidade"],
+                f"{services.round5(p['saldo_atual']):.5f}",
+                p["estoque_minimo"], p["estoque_maximo"] or "—",
+                f"{services.round5(p['preco_custo']):.5f}",
+                f"{services.round5(p['preco_venda']):.5f}",
+                f"{val_c:.5f}", f"{val_v:.5f}",
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
                 sit_label.get(p["situacao"], p["situacao"]),
             ])
         sub = f"Filtros: categoria={categoria_id or 'Todas'} | situação={situacao_filtro or 'Todas'}"
@@ -1294,7 +1589,11 @@ def estoque_list():
                              as_attachment=True,
                              download_name=f"estoque_{datetime.now():%Y%m%d_%H%M%S}.xlsx")
 
+<<<<<<< HEAD
     valor_custo_total = 0
+=======
+    # compute totals for template (valor_custo_total, valor_venda_total)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     valor_custo_total = 0
     valor_venda_total = 0
     for p in linhas_processadas:
@@ -1310,7 +1609,11 @@ def estoque_list():
 
 
 # ---------------------------------------------------------------------------
+<<<<<<< HEAD
 # Relatórios
+=======
+# Relatórios existentes (mantém, com cabeçalho empresa automático via reports.py)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 # ---------------------------------------------------------------------------
 def _consulta_relatorio(conn, tipo_relatorio, args):
     categoria_id = args.get("categoria_id", type=int)
@@ -1339,11 +1642,18 @@ def _consulta_relatorio(conn, tipo_relatorio, args):
             sit_label = {"abaixo_minimo": "Abaixo do mínimo",
                          "acima_maximo": "Acima do máximo",
                          "normal": "Normal"}[sit]
+<<<<<<< HEAD
             # Passa valores numéricos crus — reports.py formata (2 casas para valores)
             linhas.append([r["codigo"], r["nome"], r["categoria"] or "—",
                            int(r["saldo"] or 0),
                            float(r["preco_custo"] or 0),
                            float(r["preco_venda"] or 0), sit_label])
+=======
+            linhas.append([r["codigo"], r["nome"], r["categoria"] or "—",
+                           f"{services.round5(r['saldo']):.5f}",
+                           f"{services.round5(r['preco_custo']):.5f}",
+                           f"{services.round5(r['preco_venda']):.5f}", sit_label])
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         return "Relatório de Estoque Atual", colunas, linhas
 
     if tipo_relatorio == "movimentacoes":
@@ -1355,7 +1665,11 @@ def _consulta_relatorio(conn, tipo_relatorio, args):
         if data_ini:
             sql += " AND m.data_hora >= ?"; params.append(data_ini)
         if data_fim:
+<<<<<<< HEAD
             sql += " AND m.data_hora <= ?"; params.append(data_fim + "T23:59:59")
+=======
+            sql += " AND m.data_hora <= ?"; params.append(data_fim + " 23:59:59")
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         if categoria_id:
             sql += " AND p.id_categoria=?"; params.append(categoria_id)
         if id_produto:
@@ -1369,9 +1683,15 @@ def _consulta_relatorio(conn, tipo_relatorio, args):
         colunas = ["Data/Hora", "Tipo", "Produto", "Qtd.", "Unid.",
                    "Preço Unit.", "Valor Total", "Fornecedor/Cliente"]
         linhas = [[r["data_hora"], r["tipo"], r["produto"],
+<<<<<<< HEAD
                    int(r["quantidade"] or 0), r["unidade_original"],
                    float(r["preco_unitario"] or 0),
                    float(r["valor_total"] or 0), r["terceiro"]] for r in rows]
+=======
+                   f"{services.round5(r['quantidade']):.5f}", r["unidade_original"],
+                   f"{services.round5(r['preco_unitario']):.5f}",
+                   f"{services.round5(r['valor_total']):.5f}", r["terceiro"]] for r in rows]
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         return "Relatório de Movimentações", colunas, linhas
 
     if tipo_relatorio == "vendas":
@@ -1383,7 +1703,11 @@ def _consulta_relatorio(conn, tipo_relatorio, args):
         if data_ini:
             sql += " AND m.data_hora >= ?"; params.append(data_ini)
         if data_fim:
+<<<<<<< HEAD
             sql += " AND m.data_hora <= ?"; params.append(data_fim + "T23:59:59")
+=======
+            sql += " AND m.data_hora <= ?"; params.append(data_fim + " 23:59:59")
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         if categoria_id:
             sql += " AND p.id_categoria=?"; params.append(categoria_id)
         if id_produto:
@@ -1394,28 +1718,45 @@ def _consulta_relatorio(conn, tipo_relatorio, args):
                    "Lucro Bruto (mzn)", "Margem (%)"]
         linhas = []
         for r in rows:
+<<<<<<< HEAD
             total = float(r["total"] or 0)
             lucro = float(r["lucro"] or 0)
             margem = (lucro / total * 100) if total else 0
             linhas.append([r["produto"], int(r["qtd"] or 0),
                            total, lucro,
                            f"{margem:.1f}%"])
+=======
+            margem = (r["lucro"] / r["total"] * 100) if r["total"] else 0
+            linhas.append([r["produto"], f"{services.round5(r['qtd']):.5f}",
+                           f"{services.round5(r['total']):.5f}",
+                           f"{services.round5(r['lucro']):.5f}", f"{margem:.1f}%"])
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         return "Relatório de Vendas", colunas, linhas
 
     if tipo_relatorio == "estoque_baixo":
         rows = services.produtos_abaixo_minimo(conn)
         colunas = ["Código", "Produto", "Saldo Atual", "Estoque Mínimo", "Déficit"]
         linhas = [[r["codigo"], r["nome"],
+<<<<<<< HEAD
                    int(r["saldo_atual"] or 0),
                    int(r["estoque_minimo"] or 0),
                    int((r["estoque_minimo"] or 0) - (r["saldo_atual"] or 0))] for r in rows]
+=======
+                   f"{services.round5(r['saldo_atual']):.5f}",
+                   r["estoque_minimo"],
+                   f"{services.round5(r['estoque_minimo'] - r['saldo_atual']):.5f}"] for r in rows]
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         return "Relatório de Produtos com Estoque Baixo", colunas, linhas
 
     if tipo_relatorio == "validade":
         rows = services.produtos_proximos_validade(conn)
         colunas = ["Código", "Produto", "Validade", "Saldo Atual", "Situação"]
         linhas = [[r["codigo"], r["nome"], r["validade"],
+<<<<<<< HEAD
                    int(r["saldo_atual"] or 0),
+=======
+                   f"{services.round5(r['saldo_atual']):.5f}",
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
                    "VENCIDO" if r["vencido"] else "Próximo ao vencimento"] for r in rows]
         return "Relatório de Validade", colunas, linhas
 
@@ -1428,6 +1769,7 @@ def _consulta_relatorio(conn, tipo_relatorio, args):
         ).fetchall()
         colunas = ["Código", "Produto", "Categoria", "Preço Venda (mzn)", "Saldo Atual"]
         linhas = [[r["codigo"], r["nome"], r["categoria"] or "—",
+<<<<<<< HEAD
                    float(r["preco_venda"] or 0),
                    int(r["saldo"] or 0)] for r in rows]
         return "Relatório de Preços de Venda", colunas, linhas
@@ -1437,29 +1779,54 @@ def _consulta_relatorio(conn, tipo_relatorio, args):
         sql = """SELECT p.nome produto, SUM(m.quantidade) qtd, SUM(m.valor_total) receita,
                          SUM(m.valor_total) - SUM(m.lucro) AS custo_total,
                          SUM(m.lucro) lucro
+=======
+                   f"{services.round5(r['preco_venda']):.5f}",
+                   f"{services.round5(r['saldo']):.5f}"] for r in rows]
+        return "Relatório de Preços de Venda", colunas, linhas
+
+    if tipo_relatorio == "lucratividade":
+        sql = """SELECT p.nome produto, SUM(m.quantidade) qtd, SUM(m.valor_total) receita,
+                         SUM(m.quantidade * p.preco_custo) custo_total, SUM(m.lucro) lucro
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
                   FROM movimentos m JOIN produtos p ON p.id_produto=m.id_produto
                   WHERE m.tipo='Saida'"""
         params = []
         if data_ini:
             sql += " AND m.data_hora >= ?"; params.append(data_ini)
         if data_fim:
+<<<<<<< HEAD
             sql += " AND m.data_hora <= ?"; params.append(data_fim + "T23:59:59")
+=======
+            sql += " AND m.data_hora <= ?"; params.append(data_fim + " 23:59:59")
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         sql += " GROUP BY p.id_produto ORDER BY lucro DESC"
         rows = conn.execute(sql, params).fetchall()
         colunas = ["Produto", "Qtd. Vendida", "Receita (mzn)", "Custo (mzn)",
                    "Lucro Bruto (mzn)", "Margem (%)"]
         linhas = []
         for r in rows:
+<<<<<<< HEAD
             receita = float(r["receita"] or 0)
             lucro = float(r["lucro"] or 0)
             custo = float(r["custo_total"] or 0)
             margem = (lucro / receita * 100) if receita else 0
             linhas.append([r["produto"], int(r["qtd"] or 0),
                            receita, custo, lucro, f"{margem:.1f}%"])
+=======
+            margem = (r["lucro"] / r["receita"] * 100) if r["receita"] else 0
+            linhas.append([r["produto"], f"{services.round5(r['qtd']):.5f}",
+                           f"{services.round5(r['receita']):.5f}",
+                           f"{services.round5(r['custo_total']):.5f}",
+                           f"{services.round5(r['lucro']):.5f}", f"{margem:.1f}%"])
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         return "Relatório de Lucratividade por Produto", colunas, linhas
 
     return "Relatório", [], []
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 @app.route("/relatorios")
 @login_required
 def relatorios():
@@ -1497,7 +1864,11 @@ def relatorios_exportar(formato):
 
 
 # ---------------------------------------------------------------------------
+<<<<<<< HEAD
 # Balancetes
+=======
+# Balancetes (mensal / trimestral / anual) + Extratos de categoria
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 # ---------------------------------------------------------------------------
 @app.route("/balancetes")
 @login_required
@@ -1521,7 +1892,10 @@ def balancetes():
     if not data_fim:
         data_fim = hoje.isoformat()
 
+<<<<<<< HEAD
     # --- Estado inicial (SEMPRE definido, para evitar UnboundLocalError) ---
+=======
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     linhas = []
     totais = {}
     colunas = []
@@ -1530,29 +1904,44 @@ def balancetes():
     saldo_acum_final = 0
     entradas_acum_final = 0
     saidas_acum_final = 0
+<<<<<<< HEAD
     categoria_nome = ""
     extrato_produto_info = None
     extrato_produto_resumo = None
 
+=======
+
+    # Buscar produtos para o filtro
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     todos_produtos = conn.execute(
         "SELECT id_produto, codigo, nome FROM produtos WHERE ativo=1 ORDER BY nome"
     ).fetchall()
 
+<<<<<<< HEAD
     # ======================================================================
     # BLOCO 1: Determinar o tipo e construir linhas/totais/colunas/título
     # ======================================================================
     if tipo == "extrato_cat":
         # -------- Extrato por categoria --------
+=======
+    if tipo == "extrato_cat":
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         if id_categoria:
             linhas_ext, saldo_acum_final, entradas_acum_final, saidas_acum_final = (
                 services.calcular_extrato_categoria(conn, id_categoria, data_ini, data_fim)
             )
             linhas = linhas_ext
+<<<<<<< HEAD
             cat = conn.execute(
                 "SELECT nome FROM categorias WHERE id_categoria=?", (id_categoria,)
             ).fetchone()
             categoria_nome = cat["nome"] if cat else "—"
             titulo = f"Extrato de Categoria — {categoria_nome}"
+=======
+            cat = conn.execute("SELECT nome FROM categorias WHERE id_categoria=?", (id_categoria,)).fetchone()
+            cat_nome = cat["nome"] if cat else "—"
+            titulo = f"Extrato de Categoria — {cat_nome}"
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
             colunas = ["Data/Hora", "Tipo", "Código", "Produto", "Qtd.", "Unid.",
                        "Preço Unit.", "Valor Total", "Saldo Acumulado"]
             subtitulo = (
@@ -1562,6 +1951,7 @@ def balancetes():
                 f"Saldo Final: {saldo_acum_final:.2f}"
             )
             totais = {
+<<<<<<< HEAD
                 "subtotais": {
                     "qtd_entradas": services.round5(
                         sum(r["quantidade"] for r in linhas_ext if r["tipo"] == "Entrada")),
@@ -1637,6 +2027,25 @@ def balancetes():
         periodo_label = {"mensal": "Mensal",
                          "trimestral": "Trimestral",
                          "anual": "Anual"}.get(tipo, "Personalizado")
+=======
+                "qtd_total": services.round5(sum(r["quantidade"] for r in linhas_ext)),
+                "valor_total": services.round5(sum(r["valor_total"] for r in linhas_ext)),
+                "saldo_acumulado_final": services.round5(saldo_acum_final),
+                "subtotais": {
+                    "qtd_entradas": services.round5(sum(r["quantidade"] for r in linhas_ext if r["tipo"] == "Entrada")),
+                    "qtd_saidas": services.round5(sum(r["quantidade"] for r in linhas_ext if r["tipo"] == "Saida")),
+                    "qtd_saldo": services.round5(saldo_acum_final),
+                    "valor_entradas": services.round5(sum(r["valor_total"] for r in linhas_ext if r["tipo"] == "Entrada")),
+                    "valor_saidas": services.round5(sum(r["valor_total"] for r in linhas_ext if r["tipo"] == "Saida")),
+                    "valor_saldo": services.round5(sum(r["valor_total"] for r in linhas_ext)),
+                },
+            }
+        else:
+            linhas = []
+            totais = {}
+    else:
+        periodo_label = {"mensal": "Mensal", "trimestral": "Trimestral", "anual": "Anual"}.get(tipo, "Personalizado")
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         titulo = f"Balancete {periodo_label}"
         colunas = ["Código", "Produto", "Categoria",
                    "Saldo Inicial (Qtd)",
@@ -1654,6 +2063,7 @@ def balancetes():
             f"Lucro Total: {services.round5(totais.get('lucro', 0)):.2f}"
         )
 
+<<<<<<< HEAD
     # ======================================================================
     # BLOCO 2: Categorias (SEMPRE — fora de qualquer if)
     # ======================================================================
@@ -1664,6 +2074,10 @@ def balancetes():
     # ======================================================================
     # BLOCO 3: Exportação PDF/Excel
     # ======================================================================
+=======
+    categorias = conn.execute("SELECT * FROM categorias WHERE ativo=1 ORDER BY nome").fetchall()
+
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     if exportar in ("pdf", "excel"):
         out_colunas = colunas
         out_linhas = []
@@ -1671,6 +2085,7 @@ def balancetes():
             for r in linhas:
                 out_linhas.append([
                     r["data_hora"], r["tipo"], r["codigo"], r["produto"],
+<<<<<<< HEAD
                     r["quantidade"], r["unidade"],
                     r["preco_unitario"], r["valor_total"], r["saldo_acumulado"],
                 ])
@@ -1689,17 +2104,34 @@ def balancetes():
                     r["lucro"],
                     _fmt_qtd_local(r["saldo_acumulado"], r["unidade_original"]),
                     r["terceiro"],
+=======
+                    f"{services.round5(r['quantidade']):.2f}", r["unidade"],
+                    f"{services.round5(r['preco_unitario']):.2f}",
+                    f"{services.round5(r['valor_total']):.2f}",
+                    f"{services.round5(r['saldo_acumulado']):.2f}",
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
                 ])
         else:
             for r in linhas:
                 out_linhas.append([
                     r["codigo"], r["produto"], r["categoria"],
+<<<<<<< HEAD
                     r["saldo_inicial"], r["entradas_qtd"], r["entradas_val"],
                     r["saidas_qtd"], r["saidas_val"], r["saldo_final"], r["lucro"],
+=======
+                    f"{services.round5(r['saldo_inicial']):.2f}",
+                    f"{services.round5(r['entradas_qtd']):.2f}",
+                    f"{services.round5(r['entradas_val']):.2f}",
+                    f"{services.round5(r['saidas_qtd']):.2f}",
+                    f"{services.round5(r['saidas_val']):.2f}",
+                    f"{services.round5(r['saldo_final']):.2f}",
+                    f"{services.round5(r['lucro']):.2f}",
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
                 ])
         conn.close()
         if exportar == "pdf":
             buf = reportmod.gerar_pdf(titulo, out_colunas, out_linhas, subtitulo=subtitulo)
+<<<<<<< HEAD
             return send_file(
                 buf, mimetype="application/pdf", as_attachment=True,
                 download_name=f"{tipo}_{datetime.now():%Y%m%d_%H%M%S}.pdf"
@@ -1781,6 +2213,25 @@ def balancetes_imprimir_branco():
         buf, mimetype="application/pdf", as_attachment=True,
         download_name=f"folha_contagem_{datetime.now()}.pdf",
     )
+=======
+            return send_file(buf, mimetype="application/pdf", as_attachment=True,
+                             download_name=f"{tipo}_{datetime.now():%Y%m%d_%H%M%S}.pdf")
+        else:
+            buf = reportmod.gerar_excel(titulo, out_colunas, out_linhas)
+            return send_file(buf, mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                             as_attachment=True, download_name=f"{tipo}_{datetime.now():%Y%m%d_%H%M%S}.xlsx")
+
+    conn.close()
+    return render_template("balancetes.html",
+                           tipo=tipo, data_ini=data_ini, data_fim=data_fim,
+                           titulo=titulo, colunas=colunas, linhas=linhas,
+                           totais=totais, subtitulo=subtitulo,
+                           categorias=categorias,
+                           todos_produtos=todos_produtos,  # <-- CORREÇÃO: variável adicionada
+                           filtros={"categoria_id": id_categoria, "id_produto": id_produto},
+                           extrato_sum={"saldo": saldo_acum_final, "entradas": entradas_acum_final, "saidas": saidas_acum_final})
+
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
 @app.route("/relatorios/precos")
 @login_required
@@ -1800,9 +2251,12 @@ def relatorio_precos():
     return render_template("relatorio_precos.html", colunas=colunas, linhas=linhas)
 
 
+<<<<<<< HEAD
 # ---------------------------------------------------------------------------
 # Cotações
 # ---------------------------------------------------------------------------
+=======
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 @app.route("/cotacoes")
 @login_required
 def cotacoes_list():
@@ -1870,6 +2324,7 @@ def cotacao_nova():
     validade_default = (datetime.now() + timedelta(days=30)).date().isoformat()
     return render_template("cotacao_form.html", produtos=produtos, validade_default=validade_default)
 
+<<<<<<< HEAD
 @app.route("/cotacoes/<int:id_cotacao>/editar", methods=["GET"])
 @perfil_required("Admin", "Gerente", "Operador")
 def cotacao_editar(id_cotacao):
@@ -1943,16 +2398,25 @@ def cotacao_atualizar(id_cotacao):
         flash(f"Erro ao atualizar cotação: {e}", "erro")
     conn.close()
     return redirect(url_for("cotacao_editar", id_cotacao=id_cotacao))
+=======
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
 @app.route("/cotacoes/<int:id_cotacao>")
 @login_required
 def cotacao_detalhe(id_cotacao):
     conn = get_conn()
+<<<<<<< HEAD
     res = services.obter_cotacao(conn, id_cotacao)
     conn.close()
     if not res:
         abort(404)
     cotacao, itens = res
+=======
+    cotacao, itens = services.obter_cotacao(conn, id_cotacao)
+    conn.close()
+    if not cotacao:
+        abort(404)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     return render_template("cotacao_detalhe.html", cotacao=cotacao, itens=itens)
 
 
@@ -1960,11 +2424,18 @@ def cotacao_detalhe(id_cotacao):
 @login_required
 def cotacao_exportar(id_cotacao, formato):
     conn = get_conn()
+<<<<<<< HEAD
     res = services.obter_cotacao(conn, id_cotacao)
     conn.close()
     if not res:
         abort(404)
     cotacao, itens = res
+=======
+    cotacao, itens = services.obter_cotacao(conn, id_cotacao)
+    conn.close()
+    if not cotacao:
+        abort(404)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     if formato == "pdf":
         buf = reportmod.gerar_pdf_cotacao(cotacao, itens)
         return send_file(buf, mimetype="application/pdf", as_attachment=True,
@@ -2013,6 +2484,7 @@ def cotacao_rejeitar(id_cotacao):
     return redirect(url_for("cotacao_detalhe", id_cotacao=id_cotacao))
 
 
+<<<<<<< HEAD
 @app.route("/cotacoes/<int:id_cotacao>/faturar", methods=["POST"])
 @perfil_required("Admin", "Gerente", "Operador")
 def cotacao_faturar(id_cotacao):
@@ -2578,6 +3050,20 @@ def auditoria_relatorio(id_auditoria, tipo):
 
     conn.close()
     return render_template("auditoria_relatorios.html", **contexto)
+=======
+@app.route("/cotacoes/<int:id_cotacao>/converter", methods=["POST"])
+@perfil_required("Admin", "Gerente")
+def cotacao_converter(id_cotacao):
+    conn = get_conn()
+    try:
+        services.converter_cotacao_em_venda(conn, id_cotacao, session["user_id"])
+        flash("Cotação convertida em venda com sucesso.", "sucesso")
+    except services.RegraNegocioError as e:
+        flash(str(e), "erro")
+    conn.close()
+    return redirect(url_for("cotacao_detalhe", id_cotacao=id_cotacao))
+
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
 # ---------------------------------------------------------------------------
 # Segurança / perfil do usuário
@@ -2632,6 +3118,7 @@ def usuarios_salvar():
         id_usuario = f.get("id_usuario")
         senha = f.get("senha", "").strip()
         if id_usuario:
+<<<<<<< HEAD
             row = conn.execute(
                 "SELECT * FROM usuarios WHERE id_usuario=?", (id_usuario,)
             ).fetchone()
@@ -2640,6 +3127,11 @@ def usuarios_salvar():
                 conn.close()
                 return redirect(url_for("usuarios_list"))
             antigos = dict(row)
+=======
+            antigos = dict(conn.execute(
+                "SELECT * FROM usuarios WHERE id_usuario=?", (id_usuario,)
+            ).fetchone())
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
             dados_novos = {"nome": f["nome"], "login": f["login"],
                            "perfil": f["perfil"],
                            "email": f.get("email", "").strip() or None,
@@ -2692,6 +3184,7 @@ def usuarios_toggle(id_usuario):
     if id_usuario == session["user_id"]:
         flash("Você não pode desativar seu próprio usuário.", "erro")
     else:
+<<<<<<< HEAD
         row = conn.execute(
             "SELECT * FROM usuarios WHERE id_usuario=?", (id_usuario,)
         ).fetchone()
@@ -2705,6 +3198,17 @@ def usuarios_toggle(id_usuario):
                                 id_usuario, "UPDATE", antigos, {"ativo": novo_ativo}, _client_ip())
             conn.commit()
             flash("Status do usuário atualizado.", "sucesso")
+=======
+        antigos = dict(conn.execute(
+            "SELECT * FROM usuarios WHERE id_usuario=?", (id_usuario,)
+        ).fetchone())
+        novo_ativo = 0 if antigos["ativo"] else 1
+        conn.execute("UPDATE usuarios SET ativo = ? WHERE id_usuario=?", (novo_ativo, id_usuario,))
+        registrar_auditoria(conn, session["user_id"], "usuarios",
+                            id_usuario, "UPDATE", antigos, {"ativo": novo_ativo}, _client_ip())
+        conn.commit()
+        flash("Status do usuário atualizado.", "sucesso")
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     conn.close()
     return redirect(url_for("usuarios_list"))
 
@@ -2742,7 +3246,11 @@ def usuarios_excluir(id_usuario):
 
 
 # ---------------------------------------------------------------------------
+<<<<<<< HEAD
 # Configurações  ← ESTA É A FUNÇÃO QUE ESTAVA A FALTAR
+=======
+# Configurações 
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 # ---------------------------------------------------------------------------
 @app.route("/configuracoes", methods=["GET", "POST"])
 @perfil_required("Admin")
@@ -2751,6 +3259,7 @@ def configuracoes():
         set_config("metodo_custeio", request.form.get("metodo_custeio", "media_ponderada"))
         set_config("dias_alerta_validade", request.form.get("dias_alerta_validade", "7"))
         set_config("margem_lucro_desejada", request.form.get("margem_lucro_desejada", "30"))
+<<<<<<< HEAD
         set_config("permitir_estoque_negativo","1" if request.form.get("permitir_estoque_negativo") else "0")
         set_config("nome_empresa", (request.form.get("nome_empresa") or "").strip())
         set_config("moeda", (request.form.get("moeda") or "MZN").strip())
@@ -2758,10 +3267,21 @@ def configuracoes():
         set_config("backup_automatico","1" if request.form.get("backup_automatico") else "0")
         set_config("max_tentativas_login", request.form.get("max_tentativas_login", "5"))
         set_config("tempo_bloqueio_login_min", request.form.get("tempo_bloqueio_login_min", "5"))
+=======
+        set_config("permitir_estoque_negativo",
+                   "1" if request.form.get("permitir_estoque_negativo") else "0")
+        set_config("nome_empresa", (request.form.get("nome_empresa") or "").strip())
+        set_config("moeda", (request.form.get("moeda") or "MZN").strip())
+        set_config("estoque_minimo_padrao", request.form.get("estoque_minimo_padrao", "0"))
+        set_config("backup_automatico",
+                   "1" if request.form.get("backup_automatico") else "0")
+
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         set_config("morada_empresa", (request.form.get("morada_empresa") or "").strip())
         set_config("nuit_empresa", (request.form.get("nuit_empresa") or "").strip())
         set_config("contacto_empresa", (request.form.get("contacto_empresa") or "").strip())
         set_config("email_empresa", (request.form.get("email_empresa") or "").strip())
+<<<<<<< HEAD
         set_config("serie_fatura", (request.form.get("serie_fatura") or "FT").strip())
         set_config("proximo_num_fatura", request.form.get("proximo_num_fatura", "1").strip())
         set_config("tipo_documento", (request.form.get("tipo_documento") or "Factura").strip())
@@ -2783,6 +3303,13 @@ def configuracoes():
         if codigo_seg_novo:
             set_config("codigo_alteracao_produto",
                        generate_password_hash(codigo_seg_novo))
+=======
+
+        # Código de segurança para alterar produto
+        codigo_seg_novo = (request.form.get("codigo_alteracao_produto") or "").strip()
+        if codigo_seg_novo:
+            set_config("codigo_alteracao_produto", codigo_seg_novo)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
         elif request.form.get("limpar_codigo_alteracao") == "1":
             set_config("codigo_alteracao_produto", "")
 
@@ -2793,10 +3320,16 @@ def configuracoes():
                 ext = logo_arquivo.filename.rsplit(".", 1)[-1].lower()
                 if ext not in ("png", "jpg", "jpeg", "gif", "bmp", "webp"):
                     raise ValueError("Formato de imagem não suportado")
+<<<<<<< HEAD
                 pasta_img = os.path.join(get_base_dir(), "static", "img")
                 os.makedirs(pasta_img, exist_ok=True)
                 nome_seguro = f"logo_empresa.{ext}"
                 caminho = os.path.join(pasta_img, nome_seguro)
+=======
+                os.makedirs(os.path.join(get_base_dir(), "static", "img"), exist_ok=True)
+                nome_seguro = f"logo_empresa.{ext}"
+                caminho = os.path.join(get_base_dir(), "static", "img", nome_seguro)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
                 logo_arquivo.save(caminho)
                 set_config("logo_empresa", nome_seguro)
             except Exception as e:
@@ -2822,6 +3355,7 @@ def configuracoes():
         "email_empresa": get_config("email_empresa", ""),
         "logo_empresa": get_config("logo_empresa", ""),
         "codigo_alteracao_produto": get_config("codigo_alteracao_produto", ""),
+<<<<<<< HEAD
         "max_tentativas_login": get_config("max_tentativas_login", "5"),
         "tempo_bloqueio_login_min": get_config("tempo_bloqueio_login_min", "5"),
         "primeira_instalacao": get_config("primeira_instalacao", "1"),
@@ -2845,6 +3379,11 @@ def configuracoes():
     if config["logo_empresa"]:
         logo_url = url_for("static", filename=f"img/{config['logo_empresa']}")
     return render_template("configuracoes.html", config=config, logo_url=logo_url)
+=======
+        "primeira_instalacao": get_config("primeira_instalacao", "1"),
+    }
+    return render_template("configuracoes.html", config=config)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
 
 @app.route("/configuracoes/backup")
@@ -2854,12 +3393,15 @@ def configuracoes_backup():
     os.makedirs(backup_dir, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_path = os.path.join(backup_dir, f"estoque_backup_{ts}.db")
+<<<<<<< HEAD
     try:
         c = sqlite3.connect(DB_PATH)
         c.execute("PRAGMA wal_checkpoint(FULL)")
         c.close()
     except Exception:
         pass
+=======
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     shutil.copy2(DB_PATH, backup_path)
     return send_file(backup_path, as_attachment=True, download_name=os.path.basename(backup_path))
 
@@ -2879,6 +3421,7 @@ def configuracoes_restaurar():
     nome_seguro = secure_filename(arquivo.filename)
     pasta_upload = os.path.join(get_base_dir(), "backups")
     os.makedirs(pasta_upload, exist_ok=True)
+<<<<<<< HEAD
     caminho_temp = os.path.join(
         pasta_upload,
         f"upload_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{nome_seguro}",
@@ -2965,10 +3508,28 @@ def configuracoes_restaurar():
                 os.remove(caminho_temp)
             except OSError:
                 pass
+=======
+    caminho_temp = os.path.join(pasta_upload,
+                                 f"upload_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{nome_seguro}")
+    arquivo.save(caminho_temp)
+
+    try:
+        conn = sqlite3.connect(caminho_temp)
+        conn.execute("SELECT name FROM sqlite_master WHERE type='table' LIMIT 1")
+        conn.close()
+        shutil.copy2(caminho_temp, DB_PATH)
+        flash("Backup restaurado com sucesso.", "sucesso")
+    except sqlite3.Error:
+        flash("O arquivo selecionado não é um backup válido do sistema.", "erro")
+    finally:
+        if os.path.exists(caminho_temp):
+            os.remove(caminho_temp)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
 
     return redirect(url_for("configuracoes"))
 
 
+<<<<<<< HEAD
 @app.route("/configuracoes/formatar", methods=["GET", "POST"])
 @perfil_required("Admin")
 def configuracoes_formatar():
@@ -3064,5 +3625,19 @@ if __name__ == "__main__":
             threaded=True,
             use_reloader=False,
         )
+=======
+# ---------------------------------------------------------------------------
+# Inicialização
+# ---------------------------------------------------------------------------
+def abrir_navegador():
+    webbrowser.open(f"http://127.0.0.1:{APP_PORT}/")
+
+if __name__ == "__main__":
+    init_db()
+    if "--no-browser" not in sys.argv:
+        threading.Timer(1.2, abrir_navegador).start()
+    try:
+        app.run(host="127.0.0.1", port=APP_PORT, debug=False, threaded=True)
+>>>>>>> 64ec9886f1e598d60850f545ee865d1da75d06e9
     finally:
         _encerrar_tudo()
