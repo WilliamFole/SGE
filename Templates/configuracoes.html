@@ -49,7 +49,7 @@
                 <div class="logo-placeholder">Sem logo<br>(PNG/JPG/GIF, máx. 4MB)</div>
               {% endif %}
               <div class="logo-actions">
-                <input type="file" name="logo_file" accept="image/png,image/jpeg,image/gif,image/bmp,image/webp">
+                <input type="file" name="logo_arquivo" accept="image/png,image/jpeg,image/gif,image/bmp,image/webp">
                 {% if logo_url %}
                 <label class="checkbox-label" style="margin-top:8px">
                   <input type="checkbox" name="remover_logo" value="1">
@@ -79,9 +79,15 @@
           </label>
           <label>Método de custeio
             <select name="metodo_custeio">
-              <option value="media_ponderada" {{ 'selected' if config.metodo_custeio=='media_ponderada' }}>Média Ponderada Móvel</option>
-              <option value="ultimo_preco" {{ 'selected' if config.metodo_custeio=='ultimo_preco' }}>Último Preço</option>
+              <option value="media_ponderada" {{ 'selected' if config.metodo_custeio=='media_ponderada' }}>Média Ponderada Móvel (recalcula a cada entrada)</option>
+              <option value="ultimo_preco" {{ 'selected' if config.metodo_custeio=='ultimo_preco' }}>Último Preço (substitui pelo preço da entrada)</option>
+              <option value="manual" {{ 'selected' if config.metodo_custeio=='manual' }}>Custo Fixo (não altera automaticamente)</option>
             </select>
+            <span class="hint">
+              <strong>Média Ponderada:</strong> contabilidade clássica — recalcula o custo médio a cada compra.<br>
+              <strong>Último Preço:</strong> cada entrada substitui o custo pelo preço actual.<br>
+              <strong>Custo Fixo:</strong> o custo só muda quando editar o produto manualmente.
+            </span>
           </label>
           <label>Dias de antecedência p/ alerta de validade
             <input type="number" min="1" name="dias_alerta_validade" value="{{ config.dias_alerta_validade }}">
@@ -111,6 +117,99 @@
       </div>
     </div>
 
+        <!-- Cartão: Documentos Fiscais / Fatura -->
+        <div class="config-card">
+          <div class="config-card-header">
+            <div class="card-icon">🧾</div>
+            <h3>Documentos Fiscais / Fatura</h3>
+          </div>
+          <div class="config-card-body">
+            <div class="grid-form">
+              <label>Tipo do documento
+                <input type="text" name="tipo_documento" maxlength="40"
+                       value="{{ config.tipo_documento }}" placeholder="Factura">
+              </label>
+              <label>Série da fatura
+                <input type="text" name="serie_fatura" maxlength="6"
+                       value="{{ config.serie_fatura }}" placeholder="FT">
+              </label>
+              <label>Próximo nº sequencial
+                <input type="number" min="1" name="proximo_num_fatura"
+                       value="{{ config.proximo_num_fatura }}">
+                <span class="hint">Ex.: 1 → gera <code>FT 2026/00001</code></span>
+              </label>
+              <label>Condições de pagamento padrão
+                <input type="text" name="condicoes_pagamento_padrao" maxlength="40"
+                       value="{{ config.condicoes_pagamento_padrao }}" placeholder="30 dias">
+              </label>
+              <label>Câmbio padrão
+                <input type="text" name="cambio_padrao" maxlength="20"
+                       value="{{ config.cambio_padrao }}" placeholder="0,00">
+              </label>
+              <label>Moeda do câmbio
+                <input type="text" name="moeda_cambio" maxlength="6"
+                       value="{{ config.moeda_cambio }}" placeholder="USD">
+              </label>
+              <label>Taxa de IVA padrão (%)
+                <input type="number" step="0.01" min="0" max="100"
+                       name="taxa_iva_padrao" value="{{ config.taxa_iva_padrao }}">
+              </label>
+              <label>Regime de IVA
+                <select name="regime_iva">
+                  <option value="Regime Geral" {{ 'selected' if config.regime_iva=='Regime Geral' }}>Regime Geral</option>
+                  <option value="Regime Simplificado" {{ 'selected' if config.regime_iva=='Regime Simplificado' }}>Regime Simplificado</option>
+                  <option value="Isento" {{ 'selected' if config.regime_iva=='Isento' }}>Isento</option>
+                </select>
+              </label>
+              <label class="span-2">Motivo de isenção (aparece no "Quadro Resumo de Impostos")
+                <input type="text" name="motivo_isencao_iva" maxlength="120"
+                       value="{{ config.motivo_isencao_iva }}">
+              </label>
+              <label class="span-2">Texto legal do rodapé
+                <textarea name="texto_rodape_fatura" rows="2">{{ config.texto_rodape_fatura }}</textarea>
+              </label>
+            </div>
+    
+            <h4 style="margin-top:18px">Coordenadas Bancárias</h4>
+            <div class="grid-form">
+              <label>Nome do banco
+                <input type="text" name="banco_nome" maxlength="40"
+                       value="{{ config.banco_nome }}" placeholder="Ex.: BAI">
+              </label>
+              <label>Nº Conta
+                <input type="text" name="numero_conta" maxlength="40"
+                       value="{{ config.numero_conta }}">
+              </label>
+              <label>IBAN
+                <input type="text" name="iban_empresa" maxlength="60"
+                       value="{{ config.iban_empresa }}">
+              </label>
+              <label>NIB
+                <input type="text" name="nib_empresa" maxlength="40"
+                       value="{{ config.nib_empresa }}">
+              </label>
+              <label class="span-2">Logotipo do banco
+                <div class="logo-preview-box">
+                  {% if banco_logo_url %}
+                    <img src="{{ banco_logo_url }}" alt="Banco" class="logo-preview-img">
+                  {% else %}
+                    <div class="logo-placeholder">Sem logotipo do banco</div>
+                  {% endif %}
+                  <div class="logo-actions">
+                    <input type="file" name="banco_logo_arquivo"
+                           accept="image/png,image/jpeg,image/gif,image/bmp,image/webp">
+                    {% if banco_logo_url %}
+                    <label class="checkbox-label" style="margin-top:8px">
+                      <input type="checkbox" name="remover_banco_logo" value="1">
+                      Remover logotipo actual
+                    </label>
+                    {% endif %}
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
     <!-- Cartão 3: Segurança -->
     <div class="config-card">
       <div class="config-card-header">
@@ -161,6 +260,24 @@
         <button type="submit" class="btn btn-ghost">↺ Restaurar backup</button>
       </form>
     </div>
+  </div>
+</div>
+
+<!-- Cartão: Zona de Perigo -->
+<div class="config-card" style="border: 1px solid rgba(193,68,14,0.3);">
+  <div class="config-card-header" style="background: var(--perigo);">
+    <div class="card-icon" style="background: #fff; color: var(--perigo);">⚠</div>
+    <h3>Zona de Perigo</h3>
+  </div>
+  <div class="config-card-body">
+    <p style="margin-top:0; color: var(--texto-muted); font-size: 13px;">
+      Operações irreversíveis que apagam dados. Use apenas quando pretender
+      <strong>começar do zero</strong> ou limpar o exercício contabilístico.
+      Um backup automático é guardado antes de qualquer acção.
+    </p>
+    <a href="{{ url_for('configuracoes_formatar') }}" class="btn btn-danger">
+      🗑 Formatar Base de Dados...
+    </a>
   </div>
 </div>
 {% endblock %}

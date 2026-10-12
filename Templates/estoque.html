@@ -32,8 +32,8 @@
 
 <div class="report-toolbar no-print">
   <span class="muted">{{ produtos|length }} produto(s) encontrado(s) — Valor total (custo):
-    <strong>{{ "%.2f"|format(valor_custo_total|float) }} {{ config.moeda }}</strong> ·
-    Valor total (venda): <strong>{{ "%.2f"|format(valor_venda_total|float) }} {{ config.moeda }}</strong>
+    <strong>{{ valor_custo_total|format_currency }} {{ config.moeda }}</strong> ·
+    Valor total (venda): <strong>{{ valor_venda_total|format_currency }} {{ config.moeda }}</strong>
   </span>
   <div class="header-actions">
     <a href="{{ url_for('estoque_list', categoria_id=categoria_id, situacao=situacao_filtro, exportar='pdf') }}"
@@ -65,8 +65,8 @@
         <td>{{ p.nome }}</td>
         <td class="muted">{{ p.categoria_nome or '—' }}</td>
         <td class="num-right"><strong>{{ p.saldo_atual }}</strong></td> {# inteiro #}
-        <td class="num-right">{{ "%.2f"|format(p.saldo_atual * (p.preco_custo or 0)) }}</td>
-        <td class="num-right">{{ "%.2f"|format(p.saldo_atual * (p.preco_venda or 0)) }}</td>
+        <td class="num-right">{{ (p.saldo_atual * (p.preco_custo or 0))|format_currency }}</td>
+        <td class="num-right">{{ (p.saldo_atual * (p.preco_venda or 0))|format_currency }}</td>
         <td class="num-right muted">{{ p.estoque_minimo or 0 }}</td>
         <td class="num-right muted">{{ p.estoque_maximo or '—' }}</td>
         <td>

@@ -42,8 +42,8 @@
         <td class="muted">{{ p.categoria_nome or '—' }}</td>
         <td>{{ p.unidade }}{% if p.unidade != 'Unidade' %} ({{ p.qtd_por_unidade }}){% endif %}</td>
         <td>{{ p.saldo_atual }}</td>
-        <td>{{ "%.2f"|format(p.preco_custo) }}</td>
-        <td>{{ "%.2f"|format(p.preco_venda) }}</td>
+        <td class="num-right">{{ p.preco_custo|format_currency }}</td>
+        <td class="num-right">{{ p.preco_venda|format_currency }}</td>
         <td>
           {% if sit == 'abaixo_minimo' %}<span class="tag tag-danger">Abaixo mínimo</span>
           {% elif sit == 'acima_maximo' %}<span class="tag tag-warn">Acima máximo</span>
@@ -55,7 +55,7 @@
           {% endif %}
           {% if current_user.perfil == 'Admin' %}
           <form method="POST" action="{{ url_for('produtos_excluir', id_produto=p.id_produto) }}" class="inline-form"
-                onsubmit="return confirm('Excluir este produto?');">
+            onsubmit="return confirm('⚠️ ATENÇÃO: Excluir este produto removerá PERMANENTEMENTE todos os movimentos, inventários e cotações relacionados. Deseja continuar?');">
             <button type="submit" class="link-action link-danger">Excluir</button>
           </form>
           {% endif %}

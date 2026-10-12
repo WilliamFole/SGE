@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block page_title %}Fatura FT-{{ '%05d' % conta.id_conta }}{% endblock %}
+{% block title %}Fatura FT-{{ '%05d' % conta.id_conta }} · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ conta.numero_fatura or ('Fatura FT-' ~ '%05d'|format(conta.id_conta)) }}</h1>
+    <p class="page-sub">Cliente: {{ conta.nome_cliente }} · Status: {{ conta.status }}</p>
+  </div>
+  <div class="header-actions no-print">
+    <a class="btn btn-secondary" target="_blank"
+       href="{{ url_for('conta_receber_fatura_pdf', id_conta=conta.id_conta) }}">⬇ Fatura PDF</a>
+
+    {% if conta.status not in ['Liquidada','Cancelada'] %}
+    <form method="POST"
+          action="{{ url_for('conta_receber_eliminar', id_conta=conta.id_conta) }}"
+          style="display:inline"
+          onsubmit="return confirm('⚠️ Eliminar esta fatura?\n\nOs produtos serão DEVOLVIDOS ao stock.\nEsta acção é irreversível. Continuar?');">
+      <button type="submit" class="btn btn-danger">🗑 Eliminar Fatura (repõe stock)</button>
+    </form>
+    {% endif %}
+
+    <a class="btn btn-ghost" href="{{ url_for('contas_receber_list') }}">← Voltar</a>
+  </div>
+</div>
+
+<div class="cards-grid">
+  <div class="stat-card">
+    <span class="stat-label">Total</span>
+    <span class="stat-value">{{ conta.valor_total|format_currency }}</span>
+    <span class="hint">{{ config.moeda }}</span>
+  </div>
+  <div class="stat-card accent-good">
+    <span class="stat-label">Pago</span>
+    <span class="stat-value">{{ conta.valor_pago|format_currency }}</span>
+    <span class="hint">{{ config.moeda }}</span>
+  </div>
+  <div class="stat-card accent-amber">
+    <span class="stat-label">Saldo</span>
+    <span class="stat-value">{{ conta.saldo|format_currency }}</span>
+    <span class="hint">{{ config.moeda }}</span>
+  </div>
+</div>
+
+<div class="panel">
+  <h3>Produtos da Fatura</h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Produto</th>
+        <th class="num-right">Qtd.</th>
+        <th>Unid.</th>
+        <th class="num-right">Preço Unit.</th>
+        <th class="num-right">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for it in itens %}
+      <tr>
+        <td class="mono">{{ it.produto_codigo }}</td>
+        <td>{{ it.produto_nome }}</td>
+        <td class="num-right">
+          {% if it.unidade_original == 'kg' %}
+            {{ it.quantidade_original|format_num(3) }}
+          {% else %}
+            {{ it.quantidade_original|format_num(0) }}
+          {% endif %}
+        </td>
+        <td>{{ it.unidade_original }}</td>
+        <td class="num-right">{{ it.preco_unitario|format_currency }}</td>
+        <td class="num-right"><strong>{{ it.valor_total|format_currency }}</strong></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="empty-hint">Sem itens registados.</td></tr>
+    {% endfor %}
+    </tbody>
+    <tr class="totais-row">
+      <td colspan="5" style="text-align:right"><strong>TOTAL</strong></td>
+      <td class="num-right"><strong>{{ conta.valor_total|format_currency }}</strong></td>
+    </tr>
+  </table>
+</div>
+
+{% if conta.status not in ['Liquidada','Cancelada'] %}
+<div class="panel form-panel">
+  <h3>Liquidar / Pagamento</h3>
+  <form method="POST" action="{{ url_for('conta_receber_liquidar', id_conta=conta.id_conta) }}" class="grid-form">
+    <label>Valor a pagar *
+      <input type="number" step="0.01" min="0.01" max="{{ conta.saldo }}"
+             name="valor" value="{{ '%.2f'|format(conta.saldo) }}" required>
+    </label>
+    <label>Forma de pagamento
+      <select name="forma_pagamento">
+        <option>Dinheiro</option>
+        <option>M-Pesa</option>
+        <option>Transferência</option>
+        <option>Cartão</option>
+        <option>Cheque</option>
+      </select>
+    </label>
+    <label>Data do pagamento
+      <input type="date" name="data_pagamento" value="{{ hoje }}">
+    </label>
+    <label class="span-2">Observações
+      <textarea name="observacoes" rows="2"></textarea>
+    </label>
+    <div class="form-actions span-2">
+      <button type="submit" class="btn btn-primary">Emitir Recibo</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+<div class="panel">
+  <h3>Recibos emitidos</h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Nº</th>
+        <th>Data</th>
+        <th>Forma</th>
+        <th class="num-right">Valor</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for r in recibos %}
+      <tr>
+        <td class="mono">{{ r.numero }}</td>
+        <td>{{ r.data_pagamento[:10] }}</td>
+        <td>{{ r.forma_pagamento or '—' }}</td>
+        <td class="num-right">{{ r.valor|format_currency }}</td>
+        <td class="actions-cell">
+          <a class="link-action" target="_blank"
+             href="{{ url_for('recibo_pdf', id_recibo=r.id_recibo) }}">PDF</a>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="empty-hint">Sem recibos emitidos.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

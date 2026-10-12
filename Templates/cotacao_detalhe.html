@@ -4,24 +4,21 @@
 {% block content %}
 <div class="page-header">
   <div>
-    <h1>Cotacção {{ cotacao.numero }}</h1>
+    <h1>Cotação {{ cotacao.numero }}</h1>
     <p class="page-sub">Emissão: {{ cotacao.data_emissao[:10] }} · Validade: {{ cotacao.data_validade[:10] }}</p>
   </div>
   <div class="header-actions no-print">
     <a href="{{ url_for('cotacao_exportar', id_cotacao=cotacao.id_cotacao, formato='pdf') }}" class="btn btn-secondary">⬇ PDF</a>
     <a href="{{ url_for('cotacao_exportar', id_cotacao=cotacao.id_cotacao, formato='excel') }}" class="btn btn-secondary">⬇ Excel</a>
     {% if cotacao.status == 'Aberta' %}
-    <form method="POST" action="{{ url_for('cotacao_aprovar', id_cotacao=cotacao.id_cotacao) }}" style="display:inline;">
-      <button type="submit" class="btn btn-primary" onclick="return confirm('Aprovar esta cotação?')">Aprovar</button>
-    </form>
-    <form method="POST" action="{{ url_for('cotacao_rejeitar', id_cotacao=cotacao.id_cotacao) }}" style="display:inline;">
-      <button type="submit" class="btn btn-danger" onclick="return confirm('Rejeitar esta cotação?')">Rejeitar</button>
-    </form>
+    <a href="{{ url_for('cotacao_editar', id_cotacao=cotacao.id_cotacao) }}" class="btn btn-secondary">✎ Editar</a>
     {% endif %}
-    {% if cotacao.status == 'Aprovada' %}
-    <form method="POST" action="{{ url_for('cotacao_converter', id_cotacao=cotacao.id_cotacao) }}" style="display:inline;">
-      <button type="submit" class="btn btn-success" onclick="return confirm('Converter esta cotação em venda?')">Converter em Venda</button>
-    </form>
+
+    {% if cotacao.status in ['Aberta','Aprovada'] %}
+    <button type="button" class="btn btn-primary"
+            onclick="document.getElementById('dlgFaturar').style.display='block'">
+      🧾 Converter em Fatura
+    </button>
     {% endif %}
   </div>
 </div>
@@ -38,7 +35,7 @@
       {% elif cotacao.status == 'Convertida' %}<span class="tag tag-neutral">Convertida</span>
       {% else %}<span class="tag tag-neutral">{{ cotacao.status }}</span>{% endif %}
     </div>
-    <div><strong>Observações:</strong> {{ cotacao.observacoes or '—' }}</div>
+    <div style="grid-column: span 2;"><strong>Observações:</strong> {{ cotacao.observacoes or '—' }}</div>
   </div>
 
   <table class="data-table">
@@ -48,26 +45,49 @@
         <th>Produto</th>
         <th class="num-right">Quantidade</th>
         <th class="num-right">Preço Unit.</th>
-        <th class="num-right">Desconto</th>
+        <th class="num-right">Desconto %</th>
         <th class="num-right">Subtotal</th>
       </tr>
     </thead>
     <tbody>
       {% for item in itens %}
       <tr>
-        <td>{{ item.codigo }}</td>
+        <td class="mono">{{ item.codigo }}</td>
         <td>{{ item.produto_nome }}</td>
         <td class="num-right">{{ item.quantidade }}</td>
-        <td class="num-right">{{ "%.2f"|format(item.preco_unitario|float) }}</td>
-        <td class="num-right">{{ item.desconto_percentual }}%</td>
-        <td class="num-right">{{ "%.2f"|format(item.valor_total|float) }}</td>
+        <td class="num-right">{{ item.preco_unitario|format_currency }}</td>
+        <td class="num-right">{{ '%.0f'|format(item.desconto_percentual or 0) }}%</td>
+        <td class="num-right"><strong>{{ item.valor_total|format_currency }}</strong></td>
       </tr>
       {% endfor %}
     </tbody>
     <tr class="totais-row">
       <td colspan="5" style="text-align:right;"><strong>Total Geral</strong></td>
-      <td class="num-right"><strong>{{ "%.2f"|format(cotacao.valor_total|float) }}</strong></td>
+      <td class="num-right"><strong>{{ cotacao.valor_total|format_currency }}</strong></td>
     </tr>
   </table>
+</div>
+
+{# --- Modal: Faturar cotação --- #}
+<div id="dlgFaturar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000">
+  <div style="background:#fff;max-width:480px;margin:80px auto;padding:24px;border-radius:8px">
+    <h3>Converter cotação em fatura</h3>
+    <form method="POST" action="{{ url_for('cotacao_faturar', id_cotacao=cotacao.id_cotacao) }}">
+      <label>Data de vencimento
+        <input type="date" name="data_vencimento">
+      </label>
+      <label class="checkbox-label" style="margin-top:12px">
+        <input type="checkbox" name="isento_iva" value="1"> Isento de IVA
+      </label>
+      <label style="margin-top:8px">Taxa de IVA (%)
+        <input type="number" step="0.01" min="0" max="100" name="taxa_iva" value="16">
+      </label>
+      <div class="form-actions" style="margin-top:16px">
+        <button type="submit" class="btn btn-primary">Emitir Fatura</button>
+        <button type="button" class="btn btn-ghost"
+                onclick="document.getElementById('dlgFaturar').style.display='none'">Cancelar</button>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}

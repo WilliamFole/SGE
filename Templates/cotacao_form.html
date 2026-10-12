@@ -1,31 +1,40 @@
 {% extends "base.html" %}
-{% block page_title %}Nova Cotação{% endblock %}
-{% block title %}Nova Cotação · {{ app_name }}{% endblock %}
+{% block page_title %}{{ 'Editar Cotação' if cotacao else 'Nova Cotação' }}{% endblock %}
+{% block title %}{{ 'Editar' if cotacao else 'Nova' }} Cotação · {{ app_name }}{% endblock %}
 {% block content %}
 <div class="page-header">
   <div>
-    <h1>Nova Cotação</h1>
+    <h1>{{ 'Editar Cotação ' + cotacao.numero if cotacao else 'Nova Cotação' }}</h1>
     <p class="page-sub">Preencha os dados do cliente e adicione os produtos</p>
   </div>
 </div>
 
 <div class="panel form-panel">
-  <form method="POST" id="formCotacao">
+  <form method="POST"
+        action="{{ url_for('cotacao_atualizar', id_cotacao=cotacao.id_cotacao) if cotacao else url_for('cotacao_nova') }}"
+        id="formCotacao">
     <div class="grid-form">
       <label class="span-2">Nome do Cliente *
-        <input type="text" name="cliente_nome" required placeholder="Ex.: João da Silva">
+        <input type="text" name="cliente_nome" required
+               value="{{ cotacao.nome_cliente if cotacao else '' }}"
+               placeholder="Ex.: João da Silva">
       </label>
       <label>Email
-        <input type="email" name="cliente_email" placeholder="cliente@email.com">
+        <input type="email" name="cliente_email"
+               value="{{ cotacao.email_cliente if cotacao and cotacao.email_cliente else '' }}"
+               placeholder="cliente@email.com">
       </label>
       <label>Telefone
-        <input type="text" name="cliente_telefone" placeholder="+258 84 000 0000">
+        <input type="text" name="cliente_telefone"
+               value="{{ cotacao.telefone_cliente if cotacao and cotacao.telefone_cliente else '' }}"
+               placeholder="+258 84 000 0000">
       </label>
       <label>Data de Validade
-        <input type="date" name="data_validade" value="{{ validade_default }}">
+        <input type="date" name="data_validade"
+               value="{{ cotacao.data_validade[:10] if cotacao else validade_default }}">
       </label>
       <label class="span-2">Observações
-        <textarea name="observacoes" rows="3"></textarea>
+        <textarea name="observacoes" rows="3">{{ cotacao.observacoes if cotacao and cotacao.observacoes else '' }}</textarea>
       </label>
     </div>
 
@@ -33,29 +42,41 @@
 
     <h3>Itens da Cotação</h3>
     <div id="itens-container">
-      <div class="cotacao-item-row" style="display:grid; grid-template-columns: 2fr 1fr 1fr 1fr 0.5fr auto; gap:8px; align-items:end; margin-bottom:10px;">
+      {% set itens_iniciais = itens if itens else [None] %}
+      {% for item in itens_iniciais %}
+      <div class="cotacao-item-row" style="display:grid; grid-template-columns: 2fr 1fr 1fr 1fr 0.7fr auto; gap:8px; align-items:end; margin-bottom:10px;">
         <label>Produto
           <select name="id_produto[]" class="produto-select" required>
             <option value="">Selecione...</option>
             {% for p in produtos %}
-            <option value="{{ p.id_produto }}" data-preco="{{ p.preco_venda }}">{{ p.codigo }} - {{ p.nome }}</option>
+            <option value="{{ p.id_produto }}"
+                    data-preco="{{ p.preco_venda }}"
+                    {{ 'selected' if item and item.id_produto == p.id_produto }}>
+              {{ p.codigo }} - {{ p.nome }}
+            </option>
             {% endfor %}
           </select>
         </label>
         <label>Quantidade
-          <input type="number" name="quantidade[]" min="1" step="1" value="1" required>
+          <input type="number" name="quantidade[]" min="1" step="1"
+                 value="{{ item.quantidade if item else 1 }}" required>
         </label>
         <label>Preço Unit.
-          <input type="number" name="preco_unitario[]" step="0.01" min="0" class="preco-unitario" required>
+          <input type="number" name="preco_unitario[]" step="0.01" min="0"
+                 class="preco-unitario"
+                 value="{{ '%.2f'|format(item.preco_unitario) if item else '' }}" required>
         </label>
         <label>Desconto (%)
-          <input type="number" name="desconto[]" step="0.1" min="0" max="100" value="0" class="desconto">
+          <input type="number" name="desconto[]" step="0.1" min="0" max="100"
+                 class="desconto"
+                 value="{{ item.desconto_percentual if item else 0 }}">
         </label>
         <label>Subtotal
           <span class="subtotal-display">0.00</span>
         </label>
         <button type="button" class="btn btn-danger btn-sm remover-item" style="align-self:center;">✕</button>
       </div>
+      {% endfor %}
     </div>
     <div style="margin:10px 0;">
       <button type="button" class="btn btn-secondary" id="adicionar-item">+ Adicionar Item</button>
@@ -66,8 +87,11 @@
     </div>
 
     <div class="form-actions" style="margin-top:20px;">
-      <button type="submit" class="btn btn-primary">Guardar Cotação</button>
-      <a href="{{ url_for('cotacoes_list') }}" class="btn btn-ghost">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
+        {{ 'Guardar Alterações' if cotacao else 'Guardar Cotação' }}
+      </button>
+      <a href="{{ url_for('cotacao_detalhe', id_cotacao=cotacao.id_cotacao) if cotacao else url_for('cotacoes_list') }}"
+         class="btn btn-ghost">Cancelar</a>
     </div>
   </form>
 </div>
@@ -78,28 +102,34 @@
   const container = document.getElementById('itens-container');
   const totalGeral = document.getElementById('total-geral');
 
+  function fmtBR(n) {
+    var s = Number(n).toFixed(2);           // "1000.50"
+    var parts = s.split('.');
+    var intFmt = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');  // "1.000"
+    return intFmt + ',' + parts[1];
+  }
+
   function calcularLinha(row) {
-    const qtd = parseInt(row.querySelector('input[name="quantidade[]"]').value) || 0;
-    const preco = parseFloat(row.querySelector('input[name="preco_unitario[]"]').value) || 0;
-    const desc = parseFloat(row.querySelector('input[name="desconto[]"]').value) || 0;
-    const subtotal = qtd * preco * (1 - desc / 100);
-    row.querySelector('.subtotal-display').textContent = subtotal.toFixed(2);
+    var qtd = parseInt(row.querySelector('input[name="quantidade[]"]').value) || 0;
+    var preco = parseFloat(row.querySelector('input[name="preco_unitario[]"]').value) || 0;
+    var desc = parseFloat(row.querySelector('input[name="desconto[]"]').value) || 0;
+    var subtotal = qtd * preco * (1 - desc / 100);
+    row.querySelector('.subtotal-display').textContent = fmtBR(subtotal);
     return subtotal;
   }
 
   function calcularTotal() {
-    let total = 0;
+    var total = 0;
     document.querySelectorAll('.cotacao-item-row').forEach(function(row) {
       total += calcularLinha(row);
     });
-    totalGeral.textContent = total.toFixed(2);
+    totalGeral.textContent = fmtBR(total);
   }
 
-  // Evento para alterações
+  // Delegated: change (select / inputs)
   container.addEventListener('change', function(e) {
     const row = e.target.closest('.cotacao-item-row');
     if (!row) return;
-    // Se for select de produto, preencher preço automático
     if (e.target.classList.contains('produto-select')) {
       const selected = e.target.options[e.target.selectedIndex];
       const preco = selected.dataset.preco || 0;
@@ -107,33 +137,13 @@
     }
     calcularTotal();
   });
-
   container.addEventListener('input', function(e) {
     const row = e.target.closest('.cotacao-item-row');
     if (!row) return;
     calcularTotal();
   });
 
-  // Adicionar linha
-  document.getElementById('adicionar-item').addEventListener('click', function() {
-    const template = document.querySelector('.cotacao-item-row').cloneNode(true);
-    template.querySelectorAll('input').forEach(function(inp) { inp.value = ''; });
-    template.querySelector('select').selectedIndex = 0;
-    template.querySelector('.subtotal-display').textContent = '0.00';
-    template.querySelector('.remover-item').addEventListener('click', function() {
-      if (document.querySelectorAll('.cotacao-item-row').length > 1) {
-        template.remove();
-        calcularTotal();
-      } else {
-        alert('A cotação deve ter pelo menos um item.');
-      }
-    });
-    container.appendChild(template);
-    calcularTotal();
-  });
-
-  // Remover linha (para a primeira, usar o botão existente)
-  document.querySelectorAll('.remover-item').forEach(function(btn) {
+  function aplicarRemover(btn) {
     btn.addEventListener('click', function() {
       const row = btn.closest('.cotacao-item-row');
       if (document.querySelectorAll('.cotacao-item-row').length > 1) {
@@ -143,9 +153,30 @@
         alert('A cotação deve ter pelo menos um item.');
       }
     });
+  }
+
+  // Botões "remover" já existentes (edit mode)
+  document.querySelectorAll('.remover-item').forEach(aplicarRemover);
+
+  // Adicionar nova linha
+  document.getElementById('adicionar-item').addEventListener('click', function() {
+    const template = document.querySelector('.cotacao-item-row').cloneNode(true);
+    template.querySelectorAll('input').forEach(function(inp) {
+      if (inp.name === 'quantidade[]') inp.value = '1';
+      else if (inp.name === 'desconto[]') inp.value = '0';
+      else inp.value = '';
+    });
+    template.querySelector('select').selectedIndex = 0;
+    template.querySelector('.subtotal-display').textContent = '0.00';
+    const btn = template.querySelector('.remover-item');
+    // Remove event listeners antigos clonando o botão
+    const novoBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(novoBtn, btn);
+    aplicarRemover(novoBtn);
+    container.appendChild(template);
+    calcularTotal();
   });
 
-  // Calcular inicial
   calcularTotal();
 })();
 </script>

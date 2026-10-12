@@ -74,8 +74,8 @@
         <td class="muted">{{ m.categoria_nome or '—' }}</td>
         <td>{{ m.quantidade_original }} {{ m.unidade_original }}</td>
         <td class="mono num-right">{{ m.quantidade }}</td>
-        <td class="num-right">{{ "%.2f"|format(m.preco_unitario) }}</td>
-        <td class="num-right"><strong>{{ "%.2f"|format(m.valor_total) }}</strong></td>
+        <td class="num-right">{{ m.preco_unitario|format_currency }}</td>
+        <td class="num-right"><strong>{{ m.valor_total|format_currency }}</strong></td>
         <td class="muted">{{ m.usuario_nome or '—' }}</td>
         <td class="muted">{{ m.fornecedor or m.cliente or '—' }}</td>
       </tr>

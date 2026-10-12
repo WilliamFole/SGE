@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block page_title %}Perdas{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Registo de Perdas</h1>
+    <p class="page-sub">Vencimento, quebra, furto e consumo interno</p>
+  </div>
+</div>
+
+<div class="panel form-panel">
+  <h3>Registar Perda</h3>
+  <form method="POST" class="grid-form">
+    <label class="span-2">Produto *
+      <select name="id_produto" required>
+        <option value="">Selecione...</option>
+        {% for p in produtos %}
+        <option value="{{ p.id_produto }}">{{ p.codigo }} · {{ p.nome }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Quantidade *
+      <input type="number" step="0.001" min="0.001" name="quantidade" required>
+    </label>
+    <label>Motivo *
+      <select name="motivo" required>
+        <option>Vencimento</option>
+        <option>Quebra</option>
+        <option>Furto</option>
+        <option>Consumo Interno</option>
+        <option>Outro</option>
+      </select>
+    </label>
+    <label>Data
+      <input type="date" name="data_perda" value="{{ hoje }}">
+    </label>
+    <label class="span-2">Observação
+      <textarea name="observacao" rows="2"></textarea>
+    </label>
+    <div class="form-actions span-2">
+      <button type="submit" class="btn btn-primary">Registar Perda</button>
+    </div>
+  </form>
+</div>
+
+<div class="panel" style="margin-top:16px">
+  <h3>Histórico de perdas</h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Data</th><th>Produto</th><th class="num-right">Qtd</th>
+        <th>Motivo</th><th class="num-right">Valor</th><th>Utilizador</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in perdas %}
+      {% set motivo = (p.subtipo or '').replace('Perda_','').replace('_',' ') %}
+      <tr>
+        <td class="mono">{{ p.data_hora[:16] }}</td>
+        <td>{{ p.nome }} <span class="muted">({{ p.codigo }})</span></td>
+        <td class="num-right">{{ p.quantidade|format_num(2) }}</td>
+        <td><span class="tag tag-warn">{{ motivo }}</span></td>
+        <td class="num-right">{{ p.valor_total|format_currency }}</td>
+        <td class="muted">{{ p.usuario_nome or '—' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="empty-hint">Sem perdas registadas.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

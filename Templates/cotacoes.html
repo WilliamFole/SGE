@@ -45,7 +45,7 @@
         <td>{{ c.nome_cliente }}</td>
         <td>{{ c.data_emissao[:10] }}</td>
         <td>{{ c.data_validade[:10] }}</td>
-        <td class="num-right">{{ "%.2f"|format(c.valor_total|float) }}</td>
+        <td class="num-right">{{ c.valor_total|format_currency }}</td>
         <td>
           {% if c.status == 'Aberta' %}<span class="tag tag-warn">Aberta</span>
           {% elif c.status == 'Aprovada' %}<span class="tag tag-good">Aprovada</span>
@@ -56,7 +56,7 @@
         <td class="actions-cell">
           <a href="{{ url_for('cotacao_detalhe', id_cotacao=c.id_cotacao) }}" class="link-action">Ver</a>
           {% if c.status == 'Aberta' %}
-          <a href="{{ url_for('cotacao_detalhe', id_cotacao=c.id_cotacao) }}" class="link-action">Editar</a>
+          <a href="{{ url_for('cotacao_editar', id_cotacao=c.id_cotacao) }}" class="link-action">Editar</a>
           {% endif %}
         </td>
       </tr>

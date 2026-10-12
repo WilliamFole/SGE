@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block page_title %}Fechos Mensais{% endblock %}
+{% block title %}Fechos Mensais · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Fechos Mensais de Estoque</h1>
+    <p class="page-sub">Snapshot do estoque no último dia de cada mês — otimiza auditorias futuras</p>
+  </div>
+</div>
+
+<div class="panel">
+  <h3>Gerar novo fecho</h3>
+  <form method="POST" class="grid-form">
+    <label>Ano *
+      <input type="number" name="ano" min="2000" max="2099" required
+             value="{{ hoje[:4] }}">
+    </label>
+    <label>Mês *
+      <select name="mes" required>
+        {% for m in range(1,13) %}
+        <option value="{{ m }}" {{ 'selected' if m == (hoje[5:7]|int) }}>{{ '%02d' % m }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="checkbox-label span-2">
+      <input type="checkbox" name="sobrescrever" value="1">
+      Sobrescrever se já existir fecho para este mês
+    </label>
+    <div class="form-actions span-2">
+      <button type="submit" class="btn btn-primary">Gerar Fecho</button>
+    </div>
+  </form>
+</div>
+
+<div class="panel" style="margin-top:16px">
+  <h3>Histórico de fechos</h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Período</th>
+        <th>Data do fecho</th>
+        <th class="num-right">Produtos</th>
+        <th class="num-right">Valor Custo</th>
+        <th class="num-right">Valor Venda</th>
+        <th>Gerado por</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for f in fechos %}
+      <tr>
+        <td class="mono"><strong>{{ '%02d/%d' % (f.mes, f.ano) }}</strong></td>
+        <td>{{ f.data_fecho }}</td>
+        <td class="num-right">{{ f.num_produtos }}</td>
+        <td class="num-right">{{ f.valor_total_custo|format_currency }}</td>
+        <td class="num-right">{{ f.valor_total_venda|format_currency }}</td>
+        <td class="muted">{{ f.usuario_nome or '—' }}</td>
+        <td class="actions-cell">
+          <a class="link-action" href="{{ url_for('fecho_detalhe', id_fecho=f.id_fecho) }}">Ver</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="empty-hint">Nenhum fecho gerado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

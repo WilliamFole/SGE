@@ -27,25 +27,30 @@
         {% for p in produtos %}
         {% set exportado = (p.id_produto in ids_exportados) %}
         {% set tem_delta = (p.valor_anterior is not none and p.valor_anterior != p.saldo_atual) %}
+        {% set is_kg = (p.unidade == 'kg') %}
         <tr class="{{ 'inventario-alterado' if exportado and tem_delta }}">
           <td>
             {{ p.nome }} <span class="muted">({{ p.codigo }})</span>
+            <span class="tag tag-neutral" style="margin-left:6px">{{ p.unidade }}</span>
             {% if exportado %}<span class="tag tag-amber" style="margin-left:6px">Exportado</span>{% endif %}
           </td>
           <td class="num-right" data-saldo="{{ p.saldo_atual }}">
             <span class="inventory-masked" data-saldo-real="{{ p.saldo_atual }}">******</span>
           </td>
           <td class="contagem-cell">
-            <input type="number" step="1" min="0"
+            <input type="number"
+                   step="{{ '0.001' if is_kg else '1' }}"
+                   min="0"
                    name="contagem_{{ p.id_produto }}"
                    class="contagem-input"
                    data-id="{{ p.id_produto }}"
+                   data-unidade="{{ p.unidade }}"
                    data-saldo="{{ p.saldo_atual }}"
                    value="{{ p.saldo_atual }}">
-            {% if p.valor_anterior is not none and p.valor_anterior != p.saldo_atual %}
+            {% if tem_delta %}
             {% set delta = p.saldo_atual - p.valor_anterior %}
             <span class="delta-label {{ 'positive' if delta > 0 }}">
-              antes: {{ p.valor_anterior }} → Δ {{ '%+d'|format(delta) }}
+              antes: {{ p.valor_anterior|format_num(3) }} → Δ {{ ('%+.3f'|format(delta)) if is_kg else ('%+d'|format(delta|int)) }}
             </span>
             {% endif %}
           </td>
@@ -73,37 +78,58 @@
 // --- Inventário: mostrar valores e calcular diferença após o utilizador digitar ---
 (function(){
   var inputs = document.querySelectorAll('.contagem-input');
+
+  // Arredonda um número a N casas (evita 0.199999...)
+  function arredondar(valor, casas) {
+    var fator = Math.pow(10, casas);
+    return Math.round((valor + Number.EPSILON) * fator) / fator;
+  }
+
+  // Formata um número para exibição (inteiro ou com 3 casas)
+  function formatar(valor, isKg) {
+    if (isKg) {
+      var s = valor.toFixed(3);
+      // Remove zeros à direita: 2.500 → 2.5   |   2.000 → 2
+      return s.replace(/\.?0+$/, '');
+    }
+    return String(Math.round(valor));
+  }
+
   inputs.forEach(function(inp){
     function calcularEMostrar() {
-      var id = inp.dataset.id;
-      var saldoReal = parseInt(inp.dataset.saldo) || 0;
-      var contagem = parseInt(inp.value) || 0;
-      var diff = contagem - saldoReal;
+      var id       = inp.dataset.id;
+      var isKg     = inp.dataset.unidade === 'kg';
+      var casas    = isKg ? 3 : 0;
+      var saldoReal = parseFloat(inp.dataset.saldo) || 0;
+      var contagem  = parseFloat(inp.value) || 0;
+      var diff      = arredondar(contagem - saldoReal, casas);
 
-      // Desmascarar saldo sistémico nesta linha
-      var saldoCell = inp.closest('tr').querySelectorAll('td[data-saldo] span')[0] ||
-                      inp.closest('tr').querySelectorAll('.inventory-masked')[0];
-      if (saldoCell && saldoCell.classList.contains('inventory-masked')) {
-        saldoCell.classList.remove('inventory-masked');
-        saldoCell.classList.add('inventory-unmasked');
-        saldoCell.textContent = saldoReal;
+      // Desmascarar saldo sistémico desta linha
+      var tr = inp.closest('tr');
+      var saldoSpan = tr.querySelector('td[data-saldo] .inventory-masked');
+      if (saldoSpan && saldoSpan.classList.contains('inventory-masked')) {
+        saldoSpan.classList.remove('inventory-masked');
+        saldoSpan.classList.add('inventory-unmasked');
+        saldoSpan.textContent = formatar(saldoReal, isKg);
       }
 
       // Mostrar diferença
-      var diffCell = document.querySelector('.diferenca-cell[data-id="' + id + '"] span');
-      if (diffCell && diffCell.classList.contains('inventory-masked')) {
-        diffCell.classList.remove('inventory-masked');
-        diffCell.classList.add('inventory-unmasked');
-      }
-      var diffCellRaw = document.querySelector('.diferenca-cell[data-id="' + id + '"]');
-      if (diffCellRaw) {
+      var diffCell = document.querySelector('.diferenca-cell[data-id="' + id + '"]');
+      if (diffCell) {
+        var span = diffCell.querySelector('span');
+        if (span && span.classList.contains('inventory-masked')) {
+          span.classList.remove('inventory-masked');
+          span.classList.add('inventory-unmasked');
+        }
+        var target = span || diffCell;
+        var prefixo = diff > 0 ? '+' : '';
+        target.textContent = prefixo + formatar(diff, isKg);
+
         var cls = (diff === 0) ? 'text-success' : (diff < 0 ? 'text-danger' : 'text-warn');
-        var span = diffCellRaw.querySelector('span') || diffCellRaw;
-        span.textContent = (diff > 0 ? '+' : '') + diff;
-        diffCellRaw.className = 'diferenca-cell num-right ' + cls;
-        diffCellRaw.dataset.id = id;
+        diffCell.className = 'diferenca-cell num-right ' + cls;
       }
     }
+
     inp.addEventListener('change', calcularEMostrar);
     inp.addEventListener('blur', calcularEMostrar);
     inp.addEventListener('keyup', function(ev){

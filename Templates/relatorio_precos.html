@@ -29,7 +29,7 @@
         <td class="mono">{{ linha[0] }}</td>
         <td>{{ linha[1] }}</td>
         <td>{{ linha[2] }}</td>
-        <td class="num-right">{{ "%.2f"|format(linha[3]|float) }}</td>
+        <td class="num-right">{{ linha[3]|format_currency }}</td>
       </tr>
       {% else %}
       <tr><td colspan="4" class="empty-hint">Nenhum produto cadastrado.</td></tr>
