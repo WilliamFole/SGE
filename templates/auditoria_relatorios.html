@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+{% block page_title %}{{ titulo }}{% endblock %}
+{% block title %}{{ titulo }} · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ titulo }}</h1>
+    <p class="page-sub">Auditoria #{{ aud.id_auditoria }} · Período {{ aud.data_inicio }} a {{ aud.data_fim }}</p>
+  </div>
+  <div class="header-actions no-print">
+    <button class="btn btn-secondary" onclick="window.print()">🖨 Imprimir</button>
+    <a class="btn btn-ghost" href="{{ url_for('auditoria_detalhe', id_auditoria=aud.id_auditoria) }}">← Voltar</a>
+  </div>
+</div>
+
+{# SUB-NAV #}
+<div class="filter-bar no-print" style="gap:6px; flex-wrap:wrap">
+  <a class="btn {{ 'btn-primary' if tipo=='resumo' else 'btn-ghost' }}"
+     href="{{ url_for('auditoria_relatorio', id_auditoria=aud.id_auditoria, tipo='resumo') }}">Resumo</a>
+  <a class="btn {{ 'btn-primary' if tipo=='reconciliacao' else 'btn-ghost' }}"
+     href="{{ url_for('auditoria_relatorio', id_auditoria=aud.id_auditoria, tipo='reconciliacao') }}">Reconciliação</a>
+  <a class="btn {{ 'btn-primary' if tipo=='detalhe' else 'btn-ghost' }}"
+     href="{{ url_for('auditoria_relatorio', id_auditoria=aud.id_auditoria, tipo='detalhe') }}">Detalhe</a>
+  <a class="btn {{ 'btn-primary' if tipo=='abc' else 'btn-ghost' }}"
+     href="{{ url_for('auditoria_relatorio', id_auditoria=aud.id_auditoria, tipo='abc') }}">Curva ABC</a>
+  <a class="btn {{ 'btn-primary' if tipo=='perdas' else 'btn-ghost' }}"
+     href="{{ url_for('auditoria_relatorio', id_auditoria=aud.id_auditoria, tipo='perdas') }}">Perdas & Validade</a>
+  <a class="btn {{ 'btn-primary' if tipo=='excecoes' else 'btn-ghost' }}"
+     href="{{ url_for('auditoria_relatorio', id_auditoria=aud.id_auditoria, tipo='excecoes') }}">Exceções</a>
+</div>
+
+{# ==================== RESUMO ==================== #}
+{% if tipo == 'resumo' %}
+<div class="cards-grid">
+  <div class="stat-card"><span class="stat-label">Produtos activos</span>
+    <span class="stat-value">{{ n_produtos }}</span></div>
+  <div class="stat-card"><span class="stat-label">Valor em estoque (custo)</span>
+    <span class="stat-value">{{ valor_custo|format_currency }}</span></div>
+  <div class="stat-card accent-good"><span class="stat-label">Valor em estoque (venda)</span>
+    <span class="stat-value">{{ valor_venda|format_currency }}</span></div>
+  <div class="stat-card accent-amber"><span class="stat-label">Divergência valor</span>
+    <span class="stat-value">{{ div_valor|format_currency }}</span>
+    <span class="hint">{{ div_percentual }}% do estoque</span></div>
+  <div class="stat-card accent-amber"><span class="stat-label">Divergência qtd</span>
+    <span class="stat-value">{{ div_qtd|format_num(2) }}</span></div>
+  <div class="stat-card {{ 'accent-amber' if n_pendentes > 0 else 'accent-good' }}">
+    <span class="stat-label">Pendentes</span>
+    <span class="stat-value">{{ n_pendentes }}</span>
+    <span class="hint">{{ n_divergencias }} divergências totais</span></div>
+</div>
+
+<div class="panel" style="margin-top:16px">
+  <h3>Top 10 divergências por valor</h3>
+  <table class="data-table">
+    <thead><tr>
+      <th>Código</th><th>Produto</th><th class="num-right">Teórico</th>
+      <th class="num-right">Contado</th><th class="num-right">Dif.</th>
+      <th class="num-right">Dif. Valor</th><th>Estado</th>
+    </tr></thead>
+    <tbody>
+    {% for d in top_divergencias %}
+      <tr>
+        <td class="mono">{{ d.codigo }}</td>
+        <td>{{ d.nome }}</td>
+        <td class="num-right">{{ d.estoque_teorico|format_num(2) }}</td>
+        <td class="num-right">{{ d.estoque_contado|format_num(2) }}</td>
+        <td class="num-right text-danger"><strong>{{ d.diferenca_qtd|format_num(2) }}</strong></td>
+        <td class="num-right text-danger"><strong>{{ d.diferenca_valor|format_currency }}</strong></td>
+        <td><span class="tag tag-neutral">{{ d.estado }}</span></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="7" class="empty-hint">Sem divergências.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{# ==================== RECONCILIAÇÃO ==================== #}
+{% if tipo == 'reconciliacao' %}
+<div class="panel">
+  <div style="overflow-x:auto">
+  <table class="data-table">
+    <thead><tr>
+      <th>Código</th><th>Produto</th><th>Categoria</th><th>Unid.</th>
+      <th class="num-right">Inicial</th>
+      <th class="num-right">Entradas</th>
+      <th class="num-right">Saídas</th>
+      <th class="num-right">Perdas</th>
+      <th class="num-right">Ajustes</th>
+      <th class="num-right">Teórico</th>
+      <th class="num-right">Valor</th>
+    </tr></thead>
+    <tbody>
+    {% for l in linhas %}
+      <tr>
+        <td class="mono">{{ l.codigo }}</td>
+        <td>{{ l.nome }}</td>
+        <td class="muted">{{ l.categoria }}</td>
+        <td>{{ l.unidade }}</td>
+        <td class="num-right">{{ l.inicial|format_num(2) }}</td>
+        <td class="num-right">{{ l.entradas|format_num(2) }}</td>
+        <td class="num-right">{{ l.saidas|format_num(2) }}</td>
+        <td class="num-right">{{ l.perdas|format_num(2) }}</td>
+        <td class="num-right">{{ l.ajustes|format_num(2) }}</td>
+        <td class="num-right"><strong>{{ l.teorico|format_num(2) }}</strong></td>
+        <td class="num-right">{{ l.valor_teorico|format_currency }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tr class="totais-row">
+      <td colspan="4"><strong>TOTAIS</strong></td>
+      <td class="num-right">{{ totais.ini|format_num(2) }}</td>
+      <td class="num-right">{{ totais.ent|format_num(2) }}</td>
+      <td class="num-right">{{ totais.sai|format_num(2) }}</td>
+      <td class="num-right">{{ totais.per|format_num(2) }}</td>
+      <td class="num-right">{{ totais.aj|format_num(2) }}</td>
+      <td class="num-right"><strong>{{ totais.teo|format_num(2) }}</strong></td>
+      <td></td>
+    </tr>
+  </table>
+  </div>
+</div>
+{% endif %}
+
+{# ==================== DETALHE ==================== #}
+{% if tipo == 'detalhe' %}
+<div class="panel">
+  <table class="data-table">
+    <thead><tr>
+      <th>Código</th><th>Produto</th><th>Categoria</th>
+      <th class="num-right">Teórico</th>
+      <th class="num-right">Contado</th>
+      <th class="num-right">Diferença</th>
+      <th class="num-right">Dif. Valor</th>
+      <th>Estado</th><th>Causa</th>
+    </tr></thead>
+    <tbody>
+    {% for d in divergencias %}
+      <tr>
+        <td class="mono">{{ d.codigo }}</td>
+        <td>{{ d.nome }}</td>
+        <td class="muted">{{ d.categoria_nome or '—' }}</td>
+        <td class="num-right">{{ d.estoque_teorico|format_num(2) }}</td>
+        <td class="num-right">{{ d.estoque_contado|format_num(2) }}</td>
+        <td class="num-right {{ 'text-success' if d.diferenca_qtd|abs < 0.001 else 'text-danger' }}">
+          <strong>{{ d.diferenca_qtd|format_num(2) }}</strong></td>
+        <td class="num-right {{ 'text-success' if d.diferenca_valor|abs < 0.001 else 'text-danger' }}">
+          <strong>{{ d.diferenca_valor|format_currency }}</strong></td>
+        <td><span class="tag tag-neutral">{{ d.estado }}</span></td>
+        <td class="muted">{{ d.causa or '—' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{# ==================== ABC ==================== #}
+{% if tipo == 'abc' %}
+<div class="panel">
+  <p class="muted">Valor total em estoque: <strong>{{ valor_total|format_currency }}</strong></p>
+  <table class="data-table">
+    <thead><tr>
+      <th>#</th><th>Classe</th><th>Código</th><th>Produto</th><th>Categoria</th>
+      <th class="num-right">Qtd</th>
+      <th class="num-right">Custo Unit.</th>
+      <th class="num-right">Valor</th>
+      <th class="num-right">% Acum.</th>
+    </tr></thead>
+    <tbody>
+    {% for it in itens %}
+      <tr>
+        <td class="muted">{{ loop.index }}</td>
+        <td>
+          {% if it.classe=='A' %}<span class="tag tag-good">A</span>
+          {% elif it.classe=='B' %}<span class="tag tag-warn">B</span>
+          {% else %}<span class="tag tag-neutral">C</span>{% endif %}
+        </td>
+        <td class="mono">{{ it.codigo }}</td>
+        <td>{{ it.nome }}</td>
+        <td class="muted">{{ it.categoria }}</td>
+        <td class="num-right">{{ it.qtd|format_num(2) }}</td>
+        <td class="num-right">{{ it.custo_unit|format_currency }}</td>
+        <td class="num-right"><strong>{{ it.valor|format_currency }}</strong></td>
+        <td class="num-right">{{ it.pct_acum }}%</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{# ==================== PERDAS & VALIDADE ==================== #}
+{% if tipo == 'perdas' %}
+<div class="panel">
+  <h3>Perdas por motivo</h3>
+  <table class="data-table">
+    <thead><tr>
+      <th>Motivo</th><th class="num-right">Nº registos</th>
+      <th class="num-right">Qtd total</th><th class="num-right">Valor</th>
+    </tr></thead>
+    <tbody>
+    {% for p in perdas %}
+      <tr>
+        <td><span class="tag tag-warn">{{ p.motivo }}</span></td>
+        <td class="num-right">{{ p.n }}</td>
+        <td class="num-right">{{ p.qtd|format_num(2) }}</td>
+        <td class="num-right"><strong>{{ p.valor|format_currency }}</strong></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="4" class="empty-hint">Sem perdas registadas.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="panel" style="margin-top:16px">
+  <h3>Produtos a vencer (30/60/90 dias)</h3>
+  <table class="data-table">
+    <thead><tr>
+      <th>Código</th><th>Produto</th><th>Validade</th>
+      <th class="num-right">Dias restantes</th>
+      <th class="num-right">Saldo</th>
+    </tr></thead>
+    <tbody>
+    {% for v in validade %}
+      {% set cls = 'text-danger' if (v.dias_restantes is not none and v.dias_restantes < 0)
+                    else ('text-warn' if (v.dias_restantes is not none and v.dias_restantes <= 30)
+                    else '') %}
+      <tr>
+        <td class="mono">{{ v.codigo }}</td>
+        <td>{{ v.nome }}</td>
+        <td>{{ v.validade }}</td>
+        <td class="num-right {{ cls }}">
+          {% if v.dias_restantes is not none %}
+            {{ v.dias_restantes }} dia(s)
+          {% else %}—{% endif %}
+        </td>
+        <td class="num-right">{{ v.saldo|format_num(2) }} {{ v.unidade }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="empty-hint">Sem produtos próximos do vencimento.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{# ==================== EXCEÇÕES ==================== #}
+{% if tipo == 'excecoes' %}
+<div class="panel">
+  <h3>Anomalias detectadas ({{ excecoes|length }})</h3>
+  <table class="data-table">
+    <thead><tr>
+      <th>Tipo</th><th>Código</th><th>Produto</th><th>Detalhe</th>
+    </tr></thead>
+    <tbody>
+    {% for e in excecoes %}
+      <tr>
+        <td><span class="tag tag-danger">{{ e.tipo }}</span></td>
+        <td class="mono">{{ e.codigo }}</td>
+        <td>{{ e.produto }}</td>
+        <td class="muted">{{ e.detalhe }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="4" class="empty-hint">Sem exceções detectadas. 🎉</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

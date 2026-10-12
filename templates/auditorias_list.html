@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block page_title %}Auditorias de Estoque{% endblock %}
+{% block title %}Auditorias · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Auditorias de Estoque</h1>
+    <p class="page-sub">Contagens físicas, divergências e ajustes</p>
+  </div>
+  {% if current_user.perfil in ['Admin','Gerente'] %}
+  <a href="{{ url_for('auditoria_nova') }}" class="btn btn-primary">+ Nova Auditoria</a>
+  {% endif %}
+</div>
+
+<div class="panel">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>#</th><th>Período</th><th>Tipo</th><th>Responsável</th>
+        <th>Abertura</th><th>Estado</th>
+        <th class="num-right">Div. Qtd</th>
+        <th class="num-right">Div. Valor</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in auditorias %}
+      <tr>
+        <td class="mono">{{ a.id_auditoria }}</td>
+        <td>{{ a.data_inicio }} → {{ a.data_fim }}</td>
+        <td><span class="tag tag-neutral">{{ a.tipo }}</span></td>
+        <td>{{ a.responsavel_nome or '—' }}</td>
+        <td class="mono">{{ a.data_abertura[:16] }}</td>
+        <td>
+          {% if a.estado=='fechada' %}<span class="tag tag-good">Fechada</span>
+          {% elif a.estado=='em_contagem' %}<span class="tag tag-warn">Em contagem</span>
+          {% elif a.estado=='em_revisao' %}<span class="tag tag-warn">Em revisão</span>
+          {% else %}<span class="tag tag-neutral">Aberta</span>{% endif %}
+        </td>
+        <td class="num-right">{{ a.valor_div_qtd|format_num(2) }}</td>
+        <td class="num-right">{{ a.valor_div_valor|format_currency }}</td>
+        <td class="actions-cell">
+          <a class="link-action" href="{{ url_for('auditoria_detalhe', id_auditoria=a.id_auditoria) }}">Abrir</a>
+          {% if a.estado == 'fechada' %}
+          <a class="link-action" target="_blank"
+             href="{{ url_for('auditoria_relatorio_pdf', id_auditoria=a.id_auditoria) }}">PDF</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="9" class="empty-hint">Nenhuma auditoria registada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
